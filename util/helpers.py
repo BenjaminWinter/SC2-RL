@@ -83,7 +83,7 @@ def get_available_actions():
     return ['ATTACK', 'RETREAT', '_NO_OP']
 
 
-def get_action(next_action, obs):
+def get_sc2_action(next_action, obs):
     if next_action == _ATTACK_SCREEN:
         args = [[False], get_attack_coordinates(obs)]
     elif next_action == _MOVE_SCREEN:

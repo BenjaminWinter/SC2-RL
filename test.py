@@ -3,7 +3,7 @@ import time
 from pysc2.lib import actions
 from pysc2.lib import features
 
-import util
+import util.helpers as util
 
 _PLAYER_RELATIVE = features.SCREEN_FEATURES.player_relative.index
 _VISIBILITY = features.SCREEN_FEATURES.visibility_map.index
