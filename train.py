@@ -57,7 +57,10 @@ def main(argv):
         print("debug")
         algo_cls = getattr(importlib.import_module(algo_module), algo_name)
 
-        algo = algo_cls(env, FLAGS.episodes)
+        s_space = FLAGS.screen_resolution ** 2
+        a_space = 0
+
+        algo = algo_cls(env, FLAGS.episodes, s_space, a_space)
         algo.run()
         if FLAGS.save_replay:
             env.save_replay(algo.__name__)

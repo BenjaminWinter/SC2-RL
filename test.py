@@ -18,7 +18,7 @@ _AVAILABLE_ACTIONS = ["ATTACK", "RETREAT", "SELECT_ARMY", "NO_OP"]
 
 
 class Test:
-    def __init__(self, env, episodes):
+    def __init__(self, env, episodes, s_space, a_space):
         self.env = env
         self.episodes = episodes
         self.total_frames = 0

@@ -2,12 +2,17 @@ import math
 import numpy as np
 
 from pysc2.lib import features
+from pysc2.lib import actions
 
 _PLAYER_RELATIVE = features.SCREEN_FEATURES.player_relative.index
 _VISIBILITY = features.SCREEN_FEATURES.visibility_map.index
 _PLAYER_FRIENDLY = 1
 _PLAYER_NEUTRAL = 3  # beacon/minerals
 _PLAYER_HOSTILE = 4
+_NO_OP = actions.FUNCTIONS.no_op.id
+_MOVE_SCREEN = actions.FUNCTIONS.Move_screen.id
+_ATTACK_SCREEN = actions.FUNCTIONS.Attack_screen.id
+_SELECT_ARMY = actions.FUNCTIONS.select_army.id
 
 
 def rotate_point(center, point, angle):
@@ -72,3 +77,22 @@ def get_retreat_coordinates(obs):
 
     result = np.flip(retreat_point.astype(int), 0)
     return result
+
+
+def get_available_actions():
+    return ['ATTACK', 'RETREAT', '_NO_OP']
+
+
+def get_action(next_action, obs):
+    if next_action == _ATTACK_SCREEN:
+        args = [[False], get_attack_coordinates(obs)]
+    elif next_action == _MOVE_SCREEN:
+        args = [[False], get_retreat_coordinates(obs)]
+    elif next_action == _SELECT_ARMY:
+        args = [[False]]
+    elif next_action == _NO_OP:
+        args = []
+    else:
+        raise ValueError("Action not recognised")
+
+    return actions.FunctionCall(next_action, args)
