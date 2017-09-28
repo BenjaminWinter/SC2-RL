@@ -15,7 +15,6 @@ _NO_OP = actions.FUNCTIONS.no_op.id
 class SimpleEnv(BaseEnv):
     def __init__(self):
         BaseEnv.__init__(self)
-        self._env_timestep = self._env.reset()
         #
         # SC2 action IDs for the high level  actions:
         #  Retreat
@@ -25,31 +24,20 @@ class SimpleEnv(BaseEnv):
         self._actions = [_MOVE_SCREEN, _ATTACK_SCREEN, _NO_OP]
 
     def step(self, action):
-        s = self._env_timestep[0].observation['screen'][_PLAYER_RELATIVE]
-
         self._env_timestep = self._env.step(self.get_sc2_action(action))
         r = self._env_timestep[0].reward
-        s_ = self._env_timestep[0].observation['screen'][_PLAYER_RELATIVE]
+        s_ = self.get_state()
 
-        return s, action, r, s_
-
-    def reset(self):
-        self._env_timestep = self._env.reset()
-
-    def get_available_actions(self):
-        return zip(self._actions, ['Retreat', 'Attack', 'None'])
+        return s_, r, self._env_timestep[0].last(), []
 
     def get_state(self):
-        return self._env_timestep[0]['screen'][_PLAYER_RELATIVE]
+        state = self._env_timestep[0]['screen'][_PLAYER_RELATIVE]
+        return state.reshape(state.shape, (1, ))
 
     def get_sc2_action(self, action):
-        if self._actions[action] == _ATTACK_SCREEN:
-            args = [[False], helpers.get_attack_coordinates(self._env[0])]
-        elif self._actions[action] == _MOVE_SCREEN:
-            args = [[False], helpers.get_retreat_coordinates(self._env(0))]
-        elif self._actions[action] == _NO_OP:
-            args = []
-        else:
-            raise ValueError("Action not recognised")
-
-        return actions.FunctionCall(self._actions[action], args)
+        args = {
+            _ATTACK_SCREEN: [[False], helpers.get_attack_coordinates(self._env[0])],
+            _MOVE_SCREEN: [[False], helpers.get_retreat_coordinates(self._env(0))],
+            _NO_OP: []
+        }
+        return actions.FunctionCall(self._actions[action], args.get(action))
