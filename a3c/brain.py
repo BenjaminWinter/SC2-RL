@@ -21,7 +21,7 @@ class Brain:
     train_queue = [[], [], [], [], []]  # s, a, r, s', s' terminal mask
     lock_queue = threading.Lock()
 
-    def __init__(self, s_space, a_space, none_state):
+    def __init__(self, s_space, a_space, none_state, saved_model=False):
         self.logger = logging.getLogger('sc2rl.' + __name__)
 
         self.s_space = s_space
@@ -31,7 +31,11 @@ class Brain:
         K.set_session(self.session)
         K.manual_variable_initialization(True)
 
-        self.model = self._build_model()
+        if saved_model:
+            self.model = load_model(saved_model)
+        else:
+            self.model = self._build_model()
+
         self.graph = self._build_graph(self.model)
 
         self.session.run(tf.global_variables_initializer())

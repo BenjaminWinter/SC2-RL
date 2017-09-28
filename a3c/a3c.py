@@ -1,4 +1,5 @@
 import time
+import datetime
 import gflags as flags
 import numpy as np
 import logging
@@ -14,10 +15,10 @@ flags.DEFINE_integer('threads', 8, 'Number of Parallel Agents')
 flags.DEFINE_integer('optimizers', 2, 'Number of Optimizer Threads')
 flags.DEFINE_integer('run_time', 300, 'Number of Seconds to train')
 
-from a3c.environment import Environment
-from a3c.optimizer import Optimizer
-from a3c.brain import Brain
-import a3c.shared as shared
+from .environment import Environment
+from .optimizer import Optimizer
+from .brain import Brain
+import shared as shared
 
 
 class A3c:
@@ -58,6 +59,6 @@ class A3c:
 
         print("Training finished")
 
-
+        shared.brain.model.save('models/' + str(datetime.datetime))
         run_env = Environment(render=True, e_start=0., e_end=0.)
         run_env.run()
