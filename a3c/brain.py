@@ -1,6 +1,7 @@
 import threading
 import tensorflow as tf
 import time
+import logging
 
 from keras.layers import *
 from keras.models import *
@@ -21,6 +22,8 @@ class Brain:
     lock_queue = threading.Lock()
 
     def __init__(self, s_space, a_space, none_state):
+        self.logger = logging.getLogger('sc2rl.' + __name__)
+
         self.s_space = s_space
         self.a_space = a_space
         self.none_state = none_state
@@ -104,7 +107,8 @@ class Brain:
         s_ = np.vstack(s_)
         s_mask = np.vstack(s_mask)
 
-        if len(s) > 5 * FLAGS.min_batch: print("Optimizer alert! Minimizing batch of %d" % len(s))
+        if len(s) > 5 * FLAGS.min_batch:
+            self.logger.warn("Optimizer alert! Minimizing batch of %d" % len(s))
 
         v = self.predict_v(s_)
         r = r + FLAGS.gamma_n * v * s_mask  # set v to 0 where s_ is terminal state

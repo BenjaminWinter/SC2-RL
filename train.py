@@ -5,15 +5,17 @@ from __future__ import division
 from __future__ import print_function
 
 import importlib
+import datetime
+import numpy as np
 
 from pysc2 import maps
-import scenarios
 from pysc2.env import available_actions_printer
 from pysc2.env import sc2_env
 from pysc2.lib import stopwatch
 
 from pysc2.lib import app
 import gflags as flags
+import logging
 
 FLAGS = flags.FLAGS
 flags.DEFINE_bool("render", True, "Whether to render with pygame.")
@@ -36,7 +38,18 @@ flags.DEFINE_bool("trace", False, "Whether to trace the code execution.")
 flags.DEFINE_string('algorithm', 'test.Test', 'Which Algorithm to run')
 flags.mark_flag_as_required("map")
 
+
 def main(argv):
+    logger = logging.getLogger('sc2rl')
+    logger.setLevel(logging.INFO)
+    fh = logging.FileHandler('logs/' + str(datetime.datetime.now()) + '.log')
+    ch = logging.StreamHandler()
+    fh.setLevel(logging.INFO)
+    ch.setLevel(logging.INFO)
+    logger.addHandler(fh)
+    logger.addHandler(ch)
+    np.set_printoptions(threshold=np.nan)
+
     stopwatch.sw.enabled = FLAGS.profile or FLAGS.trace
     stopwatch.sw.trace = FLAGS.trace
 
