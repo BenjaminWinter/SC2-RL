@@ -23,6 +23,7 @@ flags.DEFINE_integer("minimap_resolution", 64,
                      "Resolution for minimap feature layers.")
 flags.DEFINE_integer("game_steps_per_episode", 0, "Game steps per episode.")
 flags.DEFINE_integer("episodes", 1000, "Number of Episodes to run")
+flags.DEFINE_integer("training_time", 300, "Number of Seconds to train for")
 flags.DEFINE_integer("step_mul", 8, "Game steps per agent step.")
 flags.DEFINE_enum("agent_race", None, sc2_env.races.keys(), "Agent's race.")
 flags.DEFINE_enum("bot_race", None, sc2_env.races.keys(), "Bot's race.")
@@ -57,13 +58,8 @@ def main(argv):
         print("debug")
         algo_cls = getattr(importlib.import_module(algo_module), algo_name)
 
-        s_space = FLAGS.screen_resolution ** 2
-        a_space = 0
-
-        algo = algo_cls(env, FLAGS.episodes, s_space, a_space)
+        algo = algo_cls(env, FLAGS.episodes)
         algo.run()
-        if FLAGS.save_replay:
-            env.save_replay(algo.__name__)
 
 
 if __name__ == "__main__":
