@@ -18,7 +18,7 @@ flags.DEFINE_integer('run_time', 300, 'Number of Seconds to train')
 from .environment import Environment
 from .optimizer import Optimizer
 from .brain import Brain
-import shared as shared
+import a3c.shared as shared
 
 
 class A3c:
@@ -60,5 +60,5 @@ class A3c:
         print("Training finished")
 
         shared.brain.model.save('models/' + str(datetime.datetime))
-        run_env = Environment(render=True, e_start=0., e_end=0.)
+        run_env = Environment(e_start=0., e_end=0.)
         run_env.run()

@@ -5,8 +5,9 @@ from __future__ import division
 from __future__ import print_function
 
 import importlib
-import datetime
+import time
 import numpy as np
+import os
 
 from pysc2 import maps
 from pysc2.env import available_actions_printer
@@ -16,6 +17,9 @@ from pysc2.lib import stopwatch
 from pysc2.lib import app
 import gflags as flags
 import logging
+
+import scenarios
+from util.environments.simple_env import SimpleEnv
 
 FLAGS = flags.FLAGS
 flags.DEFINE_bool("render", True, "Whether to render with pygame.")
@@ -42,7 +46,11 @@ flags.mark_flag_as_required("map")
 def main(argv):
     logger = logging.getLogger('sc2rl')
     logger.setLevel(logging.INFO)
-    fh = logging.FileHandler('logs/' + str(datetime.datetime.now()) + '.log')
+
+    if not os.path.isdir('logs'):
+        os.mkdir('logs')
+
+    fh = logging.FileHandler('logs/' + time.strftime("%Y%m%d-%H%M%S") + '.log')
     ch = logging.StreamHandler()
     fh.setLevel(logging.INFO)
     ch.setLevel(logging.INFO)
@@ -55,24 +63,14 @@ def main(argv):
 
     maps.get(FLAGS.map)  # Assert the map exists.
 
-    with sc2_env.SC2Env(
-            FLAGS.map,
-            agent_race=FLAGS.agent_race,
-            bot_race=FLAGS.bot_race,
-            difficulty=FLAGS.difficulty,
-            step_mul=FLAGS.step_mul,
-            game_steps_per_episode=FLAGS.game_steps_per_episode,
-            screen_size_px=(FLAGS.screen_resolution, FLAGS.screen_resolution),
-            minimap_size_px=(FLAGS.minimap_resolution, FLAGS.minimap_resolution),
-            visualize=FLAGS.render) as env:
-        env = available_actions_printer.AvailableActionsPrinter(env)
+    env = SimpleEnv()
 
-        algo_module, algo_name = FLAGS.algorithm.rsplit(".", 1)
-        print("debug")
-        algo_cls = getattr(importlib.import_module(algo_module), algo_name)
+    algo_module, algo_name = FLAGS.algorithm.rsplit(".", 1)
+    print("debug")
+    algo_cls = getattr(importlib.import_module(algo_module), algo_name)
 
-        algo = algo_cls(env, FLAGS.episodes)
-        algo.run()
+    algo = algo_cls(env, FLAGS.episodes)
+    algo.run()
 
 
 if __name__ == "__main__":
