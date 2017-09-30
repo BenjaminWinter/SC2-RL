@@ -4,7 +4,7 @@ from pysc2.lib import actions
 from pysc2.lib import features
 
 import util.helpers as util
-
+from util.environments.simple_env import SimpleEnv
 _PLAYER_RELATIVE = features.SCREEN_FEATURES.player_relative.index
 _VISIBILITY = features.SCREEN_FEATURES.visibility_map.index
 _PLAYER_FRIENDLY = 1
@@ -18,15 +18,14 @@ _AVAILABLE_ACTIONS = ["ATTACK", "RETREAT", "SELECT_ARMY", "NO_OP"]
 
 
 class Test:
-    def __init__(self, env, episodes, s_space, a_space):
-        self.env = env
+    def __init__(self, episodes, a_space, s_space):
+        self.env = SimpleEnv()
         self.episodes = episodes
         self.total_frames = 0
         self.env_steps = []
 
     def run(self):
         start_time = time.time()
-
         for i in range(self.episodes):
             try:
                 env_steps = self.env.reset()

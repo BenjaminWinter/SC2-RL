@@ -1,16 +1,16 @@
 import random
 import numpy as np
 import gflags as flags
-import a3c.shared as shared
+import shared
 
 FLAGS = flags.FLAGS
 
 
 class Agent:
-    def __init__(self, action_space, e_start=FLAGS.e_start, e_end=FLAGS.e_end, e_steps=FLAGS.e_steps):
-        self.e_start = e_start
-        self.e_end = e_end
-        self.e_steps = e_steps
+    def __init__(self, action_space, e_start=0, e_end=0, e_steps=0):
+        self.e_start = e_start or FLAGS.e_start
+        self.e_end = e_end or FLAGS.e_end
+        self.e_steps = e_steps or FLAGS.e_steps
         self.action_space = action_space
 
         self.frames = 0
@@ -52,7 +52,7 @@ class Agent:
 
         self.memory.append((s, a_cats, r, s_))
 
-        self.R = (self.R + r * FLAGS.gamma_n) / FLAGS.gamma
+        self.R = (self.R + r * shared.gamma_n) / FLAGS.gamma
 
         if s_ is None:
             while len(self.memory) > 0:

@@ -7,6 +7,7 @@ from keras.layers import *
 from keras.models import *
 from keras import backend as K
 
+import shared
 import gflags as flags
 
 FLAGS = flags.FLAGS
@@ -44,14 +45,15 @@ class Brain:
         self.default_graph.finalize()  # avoid modifications
 
     def _build_model(self):
-        c_input = Conv2D(
+
+        c_input = Input(shape=(FLAGS.screen_resolution, FLAGS.screen_resolution, 1))
+        c1 = Conv2D(
             32,
             kernel_size=5,
             strides=(1, 1),
-            activation='relu',
-            input_shape=(1, FLAGS.screen_resolution, FLAGS.screen_resolution, 1)
-        )
-        pool1 = MaxPool2D(pool_size=(2, 2), strides=(1, 1))(c_input)
+            activation='relu'
+        )(c_input)
+        pool1 = MaxPool2D(pool_size=(2, 2), strides=(1, 1))(c1)
         c2 = Conv2D(
             64,
             kernel_size=3,
@@ -72,7 +74,7 @@ class Brain:
         return model
 
     def _build_graph(self, model):
-        s_t = tf.placeholder(tf.float32, shape=(FLAGS.screen_resolution, FLAGS.screen_resolution, 1))
+        s_t = tf.placeholder(tf.float32, shape=(None, FLAGS.screen_resolution, FLAGS.screen_resolution, 1))
         a_t = tf.placeholder(tf.float32, shape=(None, self.a_space))
         r_t = tf.placeholder(tf.float32, shape=(None, 1))  # not immediate, but discounted n step reward
 
@@ -105,17 +107,17 @@ class Brain:
             s, a, r, s_, s_mask = self.train_queue
             self.train_queue = [[], [], [], [], []]
 
-        s = np.vstack(s)
-        a = np.vstack(a)
-        r = np.vstack(r)
-        s_ = np.vstack(s_)
-        s_mask = np.vstack(s_mask)
+            s = np.stack(s)
+            a = np.vstack(a)
+            r = np.vstack(r)
+            s_ = np.stack(s_)
+            s_mask = np.vstack(s_mask)
 
         if len(s) > 5 * FLAGS.min_batch:
             self.logger.warn("Optimizer alert! Minimizing batch of %d" % len(s))
 
         v = self.predict_v(s_)
-        r = r + FLAGS.gamma_n * v * s_mask  # set v to 0 where s_ is terminal state
+        r = r + shared.gamma_n * v * s_mask  # set v to 0 where s_ is terminal state
 
         s_t, a_t, r_t, minimize = self.graph
         self.session.run(minimize, feed_dict={s_t: s, a_t: a, r_t: r})

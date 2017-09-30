@@ -18,11 +18,13 @@ from pysc2.lib import app
 import gflags as flags
 import logging
 
+import a3c.a3c
 import scenarios
+
 from util.environments.simple_env import SimpleEnv
 
 FLAGS = flags.FLAGS
-flags.DEFINE_bool("render", True, "Whether to render with pygame.")
+flags.DEFINE_bool("render", False, "Whether to render with pygame.")
 flags.DEFINE_integer("screen_resolution", 84,
                      "Resolution for screen feature layers.")
 flags.DEFINE_integer("minimap_resolution", 64,
@@ -63,13 +65,13 @@ def main(argv):
 
     maps.get(FLAGS.map)  # Assert the map exists.
 
-    env = SimpleEnv()
+    with SimpleEnv() as env:
+        a_space = env.get_action_space()
+        s_space = env.get_state_space()
 
     algo_module, algo_name = FLAGS.algorithm.rsplit(".", 1)
-    print("debug")
     algo_cls = getattr(importlib.import_module(algo_module), algo_name)
-
-    algo = algo_cls(env, FLAGS.episodes)
+    algo = algo_cls(FLAGS.episodes, a_space, s_space)
     algo.run()
 
 

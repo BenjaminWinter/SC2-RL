@@ -2,7 +2,7 @@ import threading
 import gflags as flags
 import time
 import logging
-from a3c.agent import Agent
+from agent import Agent
 from util.environments.simple_env import SimpleEnv
 
 FLAGS = flags.FLAGS
@@ -13,9 +13,9 @@ flags.DEFINE_float('thread_delay', 0.0005, 'Delay of Workers. used to use more W
 class Environment(threading.Thread):
     stop_signal = False
 
-    def __init__(self, e_start=FLAGS.e_start, e_end=FLAGS.e_end, e_steps=FLAGS.e_steps, sc2env=None, thread_num=999):
+    def __init__(self, e_start=0, e_end=0, e_steps=0, sc2env=None, thread_num=999):
         threading.Thread.__init__(self)
-        self.logger = logging.getLogger('sc2rl.' + __name__ + " | " + thread_num)
+        self.logger = logging.getLogger('sc2rl.' + __name__ + " | " + str(thread_num))
 
         self.episodes = 0
         self.rewards = []
@@ -26,7 +26,7 @@ class Environment(threading.Thread):
         else:
             self.env = SimpleEnv()
 
-        self.agent = Agent(self.env.get_action_space(), e_start, e_end, e_steps)
+        self.agent = Agent(self.env.get_action_space(), e_start or FLAGS.e_start, e_end or FLAGS.e_end, e_steps or FLAGS.e_steps)
 
     def run_episode(self):
         s = self.env.reset()

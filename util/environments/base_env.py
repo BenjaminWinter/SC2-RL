@@ -1,13 +1,19 @@
 from pysc2.env import sc2_env
 from pysc2.env import available_actions_printer
 import gflags as flags
-
+import time
 FLAGS = flags.FLAGS
 
 
 class BaseEnv:
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        pass
+
     def __init__(self):
-        with sc2_env.SC2Env(
+        env = sc2_env.SC2Env(
                 FLAGS.map,
                 agent_race=FLAGS.agent_race,
                 bot_race=FLAGS.bot_race,
@@ -16,10 +22,10 @@ class BaseEnv:
                 game_steps_per_episode=FLAGS.game_steps_per_episode,
                 screen_size_px=(FLAGS.screen_resolution, FLAGS.screen_resolution),
                 minimap_size_px=(FLAGS.minimap_resolution, FLAGS.minimap_resolution),
-                visualize=FLAGS.render) as env:
-            self._env = available_actions_printer.AvailableActionsPrinter(env)
-            self._env_timestep = self._env.reset()
-            self._actions = [0]
+                visualize=FLAGS.render)
+        self._env = available_actions_printer.AvailableActionsPrinter(env)
+        self._env_timestep = self._env.reset()
+        self._actions = [0]
 
     def step(self, action):
         pass
