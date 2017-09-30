@@ -60,8 +60,8 @@ def main(argv):
     logger.addHandler(ch)
     np.set_printoptions(threshold=np.nan)
 
-    stopwatch.sw.enabled = FLAGS.profile or FLAGS.trace
-    stopwatch.sw.trace = FLAGS.trace
+    #stopwatch.sw.enabled = FLAGS.profile or FLAGS.trace
+    #stopwatch.sw.trace = FLAGS.trace
 
     maps.get(FLAGS.map)  # Assert the map exists.
 

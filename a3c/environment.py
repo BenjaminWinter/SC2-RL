@@ -2,12 +2,12 @@ import threading
 import gflags as flags
 import time
 import logging
-from agent import Agent
+from .agent import Agent
 from util.environments.simple_env import SimpleEnv
 
 FLAGS = flags.FLAGS
 
-flags.DEFINE_float('thread_delay', 0.0005, 'Delay of Workers. used to use more Workers than physical CPUs')
+flags.DEFINE_float('thread_delay', 0.00001, 'Delay of Workers. used to use more Workers than physical CPUs')
 
 
 class Environment(threading.Thread):
@@ -29,6 +29,7 @@ class Environment(threading.Thread):
         self.agent = Agent(self.env.get_action_space(), e_start or FLAGS.e_start, e_end or FLAGS.e_end, e_steps or FLAGS.e_steps)
 
     def run_episode(self):
+        self.episodes += 1
         s = self.env.reset()
         R = 0
         step = 0
@@ -49,7 +50,6 @@ class Environment(threading.Thread):
 
             if done or self.stop_signal:
                 self.episodes += 1
-                self.logger.info('')
                 self.rewards.append(R)
                 self.steps.append(step)
                 break

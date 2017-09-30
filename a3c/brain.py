@@ -7,7 +7,7 @@ from keras.layers import *
 from keras.models import *
 from keras import backend as K
 
-import shared
+import a3c.shared as shared
 import gflags as flags
 
 FLAGS = flags.FLAGS
@@ -62,8 +62,8 @@ class Brain:
         )(pool1)
         pool2 = MaxPool2D(pool_size=(2, 2), strides=(1, 1))(c2)
         flatten = Flatten()(pool2)
-        dense1 = Dense(1000, activation='relu')(flatten)
-        dense2 = Dense(500, activation='relu')(dense1)
+        dense1 = Dense(100, activation='relu')(flatten)
+        dense2 = Dense(50, activation='relu')(dense1)
 
         out_actions = Dense(self.a_space, activation='softmax')(dense2)
         out_value = Dense(1, activation='linear')(dense1)
@@ -114,7 +114,7 @@ class Brain:
             s_mask = np.vstack(s_mask)
 
         if len(s) > 5 * FLAGS.min_batch:
-            self.logger.warn("Optimizer alert! Minimizing batch of %d" % len(s))
+            self.logger.warning("Optimizer alert! Minimizing batch of %d" % len(s))
 
         v = self.predict_v(s_)
         r = r + shared.gamma_n * v * s_mask  # set v to 0 where s_ is terminal state

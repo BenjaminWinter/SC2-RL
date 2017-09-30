@@ -23,7 +23,7 @@ class BaseEnv:
                 screen_size_px=(FLAGS.screen_resolution, FLAGS.screen_resolution),
                 minimap_size_px=(FLAGS.minimap_resolution, FLAGS.minimap_resolution),
                 visualize=FLAGS.render)
-        self._env = available_actions_printer.AvailableActionsPrinter(env)
+        self._env = env
         self._env_timestep = self._env.reset()
         self._actions = [0]
 

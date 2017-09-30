@@ -7,7 +7,8 @@ import logging
 from .environment import Environment
 from .optimizer import Optimizer
 from .brain import Brain
-import shared
+import a3c.shared as shared
+import matplotlib.pyplot as plt
 
 FLAGS = flags.FLAGS
 flags.DEFINE_float('e_start', 0.4, 'Starting Epsilon')
@@ -28,12 +29,14 @@ class A3c:
         """
         shared.gamma_n = FLAGS.gamma ** FLAGS.n_step_return
 
+        self.envs = [Environment(thread_num=i) for i in range(FLAGS.threads)]
+        self.opts = [Optimizer(thread_num=i) for i in range(FLAGS.optimizers)]
+
         none_state = np.zeros(s_space)
         none_state = none_state.reshape((FLAGS.screen_resolution, FLAGS.screen_resolution, 1))
         shared.brain = Brain(s_space, a_space, none_state)
 
-        self.envs = [Environment(thread_num=i) for i in range(FLAGS.threads)]
-        self.opts = [Optimizer(thread_num=i) for i in range(FLAGS.optimizers)]
+
 
         self.logger = logging.getLogger('sc2rl.' + __name__ )
         self.logger.info('Starting Up A3C Algorithm')
@@ -47,17 +50,27 @@ class A3c:
 
         time.sleep(FLAGS.run_time)
 
+        episodes = 0
+        sps=0
         for e in self.envs:
             e.stop()
         for e in self.envs:
-            self.logger.info('Rewards: ' + e.rewards)
-            self.logger.info('Steps: ' + e.steps)
+            self.logger.info('Rewards:')
+            self.logger.info(np.array(e.rewards))
+            plt.plot(e.rewards)
+            self.logger.info('Steps: ' + str(e.steps))
+            sps += sum(e.steps)
+            episodes += e.episodes
             e.join()
+        self.logger.info('Episodes: ' + str(episodes))
+        self.logger.info('Steps per Second: ' + str(sps / FLAGS.run_time))
+        plt.show()
 
         for o in self.opts:
             o.stop()
         for o in self.opts:
             o.join()
+
 
         print("Training finished")
 

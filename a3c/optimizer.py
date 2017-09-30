@@ -1,5 +1,5 @@
 import threading
-import shared as shared
+import a3c.shared as shared
 
 
 class Optimizer(threading.Thread):
