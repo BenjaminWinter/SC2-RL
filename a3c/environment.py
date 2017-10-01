@@ -1,4 +1,5 @@
 import threading
+import multiprocessing as mp
 import gflags as flags
 import time
 import logging
@@ -7,14 +8,15 @@ from util.environments.simple_env import SimpleEnv
 
 FLAGS = flags.FLAGS
 
-flags.DEFINE_float('thread_delay', 0.00001, 'Delay of Workers. used to use more Workers than physical CPUs')
+flags.DEFINE_float('thread_delay', 0.001, 'Delay of Workers. used to use more Workers than physical CPUs')
 
 
-class Environment(threading.Thread):
+class Environment(mp.Process):
     stop_signal = False
 
-    def __init__(self, e_start=0, e_end=0, e_steps=0, sc2env=None, thread_num=999):
-        threading.Thread.__init__(self)
+    def __init__(self, e_start=0, e_end=0, e_steps=0, sc2env=None, thread_num=999, queue=None):
+        #threading.Thread.__init__(self)
+        super(Environment, self).__init__()
         self.logger = logging.getLogger('sc2rl.' + __name__ + " | " + str(thread_num))
 
         self.episodes = 0
@@ -26,7 +28,7 @@ class Environment(threading.Thread):
         else:
             self.env = SimpleEnv()
 
-        self.agent = Agent(self.env.get_action_space(), e_start or FLAGS.e_start, e_end or FLAGS.e_end, e_steps or FLAGS.e_steps)
+        self.agent = Agent(self.env.get_action_space(), e_start or FLAGS.e_start, e_end or FLAGS.e_end, e_steps or FLAGS.e_steps, queue=queue)
 
     def run_episode(self):
         self.episodes += 1

@@ -2,6 +2,7 @@ import threading
 import tensorflow as tf
 import time
 import logging
+import numpy as np
 
 from keras.layers import *
 from keras.models import *
@@ -19,16 +20,16 @@ flags.DEFINE_integer('min_batch', 32, 'batch Size')
 
 
 class Brain:
-    train_queue = [[], [], [], [], []]  # s, a, r, s', s' terminal mask
-    lock_queue = threading.Lock()
 
-    def __init__(self, s_space, a_space, none_state, saved_model=False):
+    def __init__(self, s_space, a_space, none_state, saved_model=False, queue=None):
         self.logger = logging.getLogger('sc2rl.' + __name__)
 
         self.s_space = s_space
         self.a_space = a_space
         self.none_state = none_state
         self.session = tf.Session()
+        self.queue = queue
+
         K.set_session(self.session)
         K.manual_variable_initialization(True)
 
@@ -96,22 +97,23 @@ class Brain:
         return s_t, a_t, r_t, minimize
 
     def optimize(self):
-        if len(self.train_queue[0]) < FLAGS.min_batch:
-            time.sleep(0)  # yield
+        if self.queue.qsize() < FLAGS.min_batch:
+            time.sleep(0.0001)  # yield
             return
+        s = a = r = s_ = s_mask = []
+        while not self.queue.empty():
+            item = self.queue.get()
+            s.append(item[0])
+            a.append(item[1])
+            r.append(item[2])
+            s_.append(item[3])
+            s_mask.append(item[4])
 
-        with self.lock_queue:
-            if len(self.train_queue[0]) < FLAGS.min_batch:  # more thread could have passed without lock
-                return  # we can't yield inside lock
-
-            s, a, r, s_, s_mask = self.train_queue
-            self.train_queue = [[], [], [], [], []]
-
-            s = np.stack(s)
-            a = np.vstack(a)
-            r = np.vstack(r)
-            s_ = np.stack(s_)
-            s_mask = np.vstack(s_mask)
+        s = np.stack(s)
+        a = np.vstack(a)
+        r = np.vstack(r)
+        s_ = np.stack(s_)
+        s_mask = np.vstack(s_mask)
 
         if len(s) > 5 * FLAGS.min_batch:
             self.logger.warning("Optimizer alert! Minimizing batch of %d" % len(s))
@@ -121,19 +123,6 @@ class Brain:
 
         s_t, a_t, r_t, minimize = self.graph
         self.session.run(minimize, feed_dict={s_t: s, a_t: a, r_t: r})
-
-    def train_push(self, s, a, r, s_):
-        with self.lock_queue:
-            self.train_queue[0].append(s)
-            self.train_queue[1].append(a)
-            self.train_queue[2].append(r)
-
-            if s_ is None:
-                self.train_queue[3].append(self.none_state)
-                self.train_queue[4].append(0.)
-            else:
-                self.train_queue[3].append(s_)
-                self.train_queue[4].append(1.)
 
     def predict(self, s):
         with self.default_graph.as_default():

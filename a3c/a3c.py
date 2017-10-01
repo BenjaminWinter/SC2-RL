@@ -3,6 +3,7 @@ import datetime
 import gflags as flags
 import numpy as np
 import logging
+import multiprocessing as mp
 
 from .environment import Environment
 from .optimizer import Optimizer
@@ -17,7 +18,7 @@ flags.DEFINE_float('e_steps', 80000, 'Number of steps over which to decay Epsilo
 flags.DEFINE_float('gamma', 0.99, 'Discount Value Gamma')
 flags.DEFINE_integer('n_step_return', 8, 'N Step Return Value')
 flags.DEFINE_integer('threads', 8, 'Number of Parallel Agents')
-flags.DEFINE_integer('optimizers', 2, 'Number of Optimizer Threads')
+flags.DEFINE_integer('optimizers', 1, 'Number of Optimizer Threads')
 flags.DEFINE_integer('run_time', 300, 'Number of Seconds to train')
 
 
@@ -27,16 +28,15 @@ class A3c:
         :type _env: BaseEnv
         :type episodes Integer
         """
+        self.queue = mp.Queue()
         shared.gamma_n = FLAGS.gamma ** FLAGS.n_step_return
 
-        self.envs = [Environment(thread_num=i) for i in range(FLAGS.threads)]
+        self.envs = [Environment(thread_num=i, queue=self.queue) for i in range(FLAGS.threads)]
         self.opts = [Optimizer(thread_num=i) for i in range(FLAGS.optimizers)]
 
         none_state = np.zeros(s_space)
         none_state = none_state.reshape((FLAGS.screen_resolution, FLAGS.screen_resolution, 1))
-        shared.brain = Brain(s_space, a_space, none_state)
-
-
+        shared.brain = Brain(s_space, a_space, none_state, queue=self.queue)
 
         self.logger = logging.getLogger('sc2rl.' + __name__ )
         self.logger.info('Starting Up A3C Algorithm')

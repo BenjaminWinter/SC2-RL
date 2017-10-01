@@ -1,17 +1,17 @@
 import random
 import numpy as np
 import gflags as flags
-import a3c.shared as shared
 
 FLAGS = flags.FLAGS
 
 
 class Agent:
-    def __init__(self, action_space, e_start=0, e_end=0, e_steps=0):
+    def __init__(self, action_space, e_start=0, e_end=0, e_steps=0, queue=None):
         self.e_start = e_start or FLAGS.e_start
         self.e_end = e_end or FLAGS.e_end
         self.e_steps = e_steps or FLAGS.e_steps
         self.action_space = action_space
+        self.queue = queue
 
         self.frames = 0
         self.memory = []  # used for n_step return
@@ -58,7 +58,8 @@ class Agent:
             while len(self.memory) > 0:
                 n = len(self.memory)
                 s, a, r, s_ = get_sample(self.memory, n)
-                shared.brain.train_push(s, a, r, s_)
+                #shared.brain.train_push(s, a, r, s_)
+                self.push_train_data(s, a, r, s_)
 
                 self.R = (self.R - self.memory[0][2]) / FLAGS.gamma
                 self.memory.pop(0)
@@ -67,9 +68,14 @@ class Agent:
 
         if len(self.memory) >= FLAGS.n_step_return:
             s, a, r, s_ = get_sample(self.memory, FLAGS.n_step_return)
-            shared.brain.train_push(s, a, r, s_)
+            #shared.brain.train_push(s, a, r, s_)
+            self.push_train_data(s, a, r, s_)
 
             self.R = self.R - self.memory[0][2]
             self.memory.pop(0)
 
             # possible edge case - if an episode ends in <N steps, the computation is incorrect
+
+    def push_train_data(self, s, a, r, s_):
+        s_mask = 1 if s_ is None else 0
+        self.queue.put([s, a, r, s_, s_mask])
