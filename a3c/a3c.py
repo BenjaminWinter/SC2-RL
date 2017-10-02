@@ -1,15 +1,12 @@
 import time
-import datetime
 import gflags as flags
 import numpy as np
 import logging
-import yappi
 
 from .environment import Environment
 from .optimizer import Optimizer
 from .brain import Brain
 import a3c.shared as shared
-import matplotlib.pyplot as plt
 
 FLAGS = flags.FLAGS
 flags.DEFINE_float('e_start', 0.4, 'Starting Epsilon')

@@ -1,7 +1,6 @@
 from pysc2.env import sc2_env
-from pysc2.env import available_actions_printer
 import gflags as flags
-import time
+
 FLAGS = flags.FLAGS
 
 
