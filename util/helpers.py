@@ -44,6 +44,13 @@ def get_attack_coordinates(obs):
             minY = y
 
     return np.array([minY, minX])
+# def get_attack_coordinates(obs):
+#     player_relative = obs.observation["screen"][_PLAYER_RELATIVE]
+#     enemy_y, enemy_x = (player_relative == _PLAYER_HOSTILE).nonzero()
+#     player_y, player_x = (player_relative == _PLAYER_FRIENDLY).nonzero()
+#     if not enemy_y.any():
+#         return [32, 32]
+#     return (np.array(enemy_y[0] - enemy_x[0]) - np.array(player_y[0], player_x[0]))*0.1 + np.array(player_y[0], player_x[0])
 
 
 def get_retreat_coordinates(obs):
