@@ -18,9 +18,11 @@ for full list of options run with
 
 ```python train.py --help --map None```
 
-Standard Test run:
+Standard Train run:
 
 ```python train.py --map Vulture_Firebats --threads <num_cpu> --algorithm a3c.a3c.A3c -run_time <num_seconds>```
+
+for validation add flag ```--validate```
 
    [pysc2]: <https://github.com/deepmind/pysc2>
    [tf]: <https://www.tensorflow.org>
