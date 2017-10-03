@@ -5,14 +5,21 @@
   - [Tensorflow][tf]
   - [Keras][keras]
   - [Python 3.5][python]
+
 ### Installation
+
   - Install Dependencies
   - copy Maps to Starcraft/Maps/rl_scenarios Folder
   - run train.py
+
 ### Run Options
-  for full list of options run with
+
+for full list of options run with
+
 ```python train.py --help --map None```
+
 Standard Test run:
+
 ```python train.py --map Vulture_Firebats --threads <num_cpu> --algorithm a3c.a3c.A3c -run_time <num_seconds>```
 
    [pysc2]: <https://github.com/deepmind/pysc2>
