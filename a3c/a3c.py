@@ -46,9 +46,10 @@ class A3c:
         if FLAGS.validate:
             self.logger.info('starting validation')
             run_env = Environment(e_start=0., e_end=0., log_data=True)
-            run_env.run()
+            run_env.start()
             time.sleep(FLAGS.run_time)
             run_env.stop()
+            run_env.join()
             plt.plot(run_env.rewards, 'r')
             plt.show()
             return
