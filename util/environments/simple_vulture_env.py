@@ -36,13 +36,14 @@ class SimpleVultureEnv(BaseEnv):
         return state.reshape(state.shape + (1, ))
 
     def get_sc2_action(self, action):
-        args = {
-            0: [[False], helpers.get_attack_coordinates(self._env_timestep[0])],
-            1: [[False], helpers.get_retreat_coordinates(self._env_timestep[0])],
-            2: []
-        }
-        if action not in args.keys():
-            self.logger.error('action' + action + 'not recognized')
-            raise IndexError()
+        if action == 0:
+            args = [[False], helpers.get_attack_coordinates(self._env_timestep[0])]
+        elif action == 1:
+            args = [[False], helpers.get_retreat_coordinates(self._env_timestep[0])]
+        elif action == 2:
+            args = []
+        else:
+            self.logger.error('Action Not Recognised:' + str(action))
+            raise KeyError()
 
-        return actions.FunctionCall(self._actions[action], args.get(action))
+        return actions.FunctionCall(self._actions[action], args)
