@@ -3,7 +3,7 @@ import gflags as flags
 import time
 import logging
 from .agent import Agent
-from util.environments.simple_env import SimpleEnv
+import util.helpers as helpers
 
 FLAGS = flags.FLAGS
 
@@ -25,7 +25,7 @@ class Environment(threading.Thread):
         if sc2env is not None:
             self.env = sc2env
         else:
-            self.env = SimpleEnv()
+            self.env = helpers.get_env_wrapper()
 
         self.agent = Agent(self.env.get_action_space(), e_start or FLAGS.e_start, e_end or FLAGS.e_end, e_steps or FLAGS.e_steps)
 
@@ -33,7 +33,7 @@ class Environment(threading.Thread):
         if time.time() - self.start_time > 1800:
             self.env = None
             time.sleep(1)
-            self.env = SimpleEnv()
+            self.env = helpers.get_env_wrapper()
             self.start_time = time.time()
         self.episodes += 1
         s = self.env.reset()

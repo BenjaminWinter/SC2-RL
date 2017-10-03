@@ -12,7 +12,7 @@ _ATTACK_SCREEN = actions.FUNCTIONS.Attack_screen.id
 _NO_OP = actions.FUNCTIONS.no_op.id
 
 
-class SimpleEnv(BaseEnv):
+class SimpleVultureEnv(BaseEnv):
     def __init__(self):
         BaseEnv.__init__(self)
         self.logger = logging.getLogger('sc2rl.' + __name__)

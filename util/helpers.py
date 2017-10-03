@@ -1,8 +1,11 @@
 import math
 import numpy as np
+import gflags as flags
 
 from pysc2.lib import features
 from pysc2.lib import actions
+
+FLAGS = flags.FLAGS
 
 _PLAYER_RELATIVE = features.SCREEN_FEATURES.player_relative.index
 _VISIBILITY = features.SCREEN_FEATURES.visibility_map.index
@@ -103,3 +106,10 @@ def get_sc2_action(next_action, obs):
         raise ValueError("Action not recognised")
 
     return actions.FunctionCall(next_action, args)
+
+
+def get_env_wrapper():
+
+    if FLAGS.map == 'Vulture_Firebats':
+        from util.environments.simple_vulture_env import SimpleVultureEnv
+        return SimpleVultureEnv()

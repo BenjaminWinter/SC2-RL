@@ -10,18 +10,16 @@ import numpy as np
 import os
 
 from pysc2 import maps
-from pysc2.env import available_actions_printer
 from pysc2.env import sc2_env
-from pysc2.lib import stopwatch
 
 from pysc2.lib import app
 import gflags as flags
 import logging
 
+import util.helpers as helpers
 import a3c.a3c
 import scenarios
 
-from util.environments.simple_env import SimpleEnv
 
 FLAGS = flags.FLAGS
 flags.DEFINE_bool("render", False, "Whether to render with pygame.")
@@ -67,7 +65,7 @@ def main(argv):
 
     maps.get(FLAGS.map)  # Assert the map exists.
 
-    with SimpleEnv() as env:
+    with helpers.get_env_wrapper() as env:
         a_space = env.get_action_space()
         s_space = env.get_state_space()
 
