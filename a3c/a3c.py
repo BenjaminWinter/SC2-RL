@@ -18,6 +18,8 @@ flags.DEFINE_integer('n_step_return', 8, 'N Step Return Value')
 flags.DEFINE_integer('threads', 8, 'Number of Parallel Agents')
 flags.DEFINE_integer('optimizers', 1, 'Number of Optimizer Threads')
 flags.DEFINE_integer('run_time', 300, 'Number of Seconds to train')
+flags.DEFINE_string('load_model', None, 'Keras model to load')
+flags.DEFINE_string('save_model', 'models/training_model', 'Where to save Keras model')
 
 class A3c:
     def __init__(self, episodes, a_space, s_space):
@@ -33,7 +35,7 @@ class A3c:
 
         none_state = np.zeros(s_space)
         none_state = none_state.reshape((FLAGS.screen_resolution, FLAGS.screen_resolution, 1))
-        shared.brain = Brain(s_space, a_space, none_state, saved_model="models/training_model")
+        shared.brain = Brain(s_space, a_space, none_state, saved_model=FLAGS.load_model)
 
         self.runtime = FLAGS.run_time
 
@@ -109,7 +111,7 @@ class A3c:
 
         print("Training finished")
 
-        shared.brain.model.save('models/training_model')
+        shared.brain.model.save(FLAGS.save_model)
         # run_env = Environment(e_start=0., e_end=0., log_data=True)
         # run_env.run()
         # time.sleep(300)
