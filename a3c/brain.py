@@ -34,6 +34,7 @@ class Brain:
 
         if saved_model:
             self.model = load_model(saved_model)
+            self.model._make_predict_function()
         else:
             self.model = self._build_model()
 
@@ -97,7 +98,7 @@ class Brain:
 
     def optimize(self):
         if len(self.train_queue[0]) < FLAGS.min_batch:
-            time.sleep(0)  # yield
+            time.sleep(0.01)  # yield
             return
 
         with self.lock_queue:

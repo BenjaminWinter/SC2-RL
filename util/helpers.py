@@ -1,8 +1,11 @@
 import math
 import numpy as np
+import gflags as flags
 
 from pysc2.lib import features
 from pysc2.lib import actions
+
+FLAGS = flags.FLAGS
 
 _PLAYER_RELATIVE = features.SCREEN_FEATURES.player_relative.index
 _VISIBILITY = features.SCREEN_FEATURES.visibility_map.index
@@ -43,7 +46,14 @@ def get_attack_coordinates(obs):
             minX = x
             minY = y
 
-    return np.array([minY, minX])
+    return np.array([minX, minY])
+# def get_attack_coordinates(obs):
+#     player_relative = obs.observation["screen"][_PLAYER_RELATIVE]
+#     enemy_y, enemy_x = (player_relative == _PLAYER_HOSTILE).nonzero()
+#     player_y, player_x = (player_relative == _PLAYER_FRIENDLY).nonzero()
+#     if not enemy_y.any():
+#         return [32, 32]
+#     return (np.array(enemy_y[0] - enemy_x[0]) - np.array(player_y[0], player_x[0]))*0.1 + np.array(player_y[0], player_x[0])
 
 
 def get_retreat_coordinates(obs):
@@ -53,7 +63,7 @@ def get_retreat_coordinates(obs):
     player_y, player_x = (player_relative == _PLAYER_FRIENDLY).nonzero()
 
     player_pos = np.array([player_y[0], player_x[0]])
-    target = get_attack_coordinates(obs)
+    target = np.flip(get_attack_coordinates(obs), 0)
     screen_space = player_relative.shape
 
     retreat_vector = target - player_pos
@@ -96,3 +106,29 @@ def get_sc2_action(next_action, obs):
         raise ValueError("Action not recognised")
 
     return actions.FunctionCall(next_action, args)
+
+
+def get_env_wrapper():
+
+    if FLAGS.map in ['Vulture_Firebats', 'Marine_Zerglings']:
+        from util.environments.simple_vulture_env import SimpleVultureEnv
+        return SimpleVultureEnv()
+    if FLAGS.map == 'CollectMineralsMod':
+        from util.environments.simple_collectminerals_env import SimpleCollectMineralEnv
+        return SimpleCollectMineralEnv()
+
+
+def get_shifted_position(direction, obs, dist):
+    player_relative = obs.observation["screen"][_PLAYER_RELATIVE]
+    player_y, player_x = (player_relative == _PLAYER_FRIENDLY).nonzero()
+    player = [player_y[0], player_x[0]]
+   # ORDER: left,right,up,down
+    if direction == 0:
+        player[1] -= dist
+    elif direction == 1:
+        player[1] += dist
+    elif direction == 2:
+        player[0] -= dist
+    elif direction == 3:
+        player[0] += dist
+    return[min(max(0, player[1]), 84 - 1), min(max(0, player[0]), 84 - 1)]

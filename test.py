@@ -4,7 +4,7 @@ from pysc2.lib import actions
 from pysc2.lib import features
 
 import util.helpers as util
-from util.environments.simple_env import SimpleEnv
+from util.environments.simple_vulture_env import SimpleVultureEnv
 _PLAYER_RELATIVE = features.SCREEN_FEATURES.player_relative.index
 _VISIBILITY = features.SCREEN_FEATURES.visibility_map.index
 _PLAYER_FRIENDLY = 1
@@ -19,7 +19,7 @@ _AVAILABLE_ACTIONS = ["ATTACK", "RETREAT", "SELECT_ARMY", "NO_OP"]
 
 class Test:
     def __init__(self, episodes, a_space, s_space):
-        self.env = SimpleEnv()
+        self.env = SimpleVultureEnv()
         self.episodes = episodes
         self.total_frames = 0
         self.env_steps = []

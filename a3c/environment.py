@@ -3,7 +3,7 @@ import gflags as flags
 import time
 import logging
 from .agent import Agent
-from util.environments.simple_env import SimpleEnv
+import util.helpers as helpers
 
 FLAGS = flags.FLAGS
 
@@ -13,22 +13,28 @@ flags.DEFINE_float('thread_delay', 0.00001, 'Delay of Workers. used to use more 
 class Environment(threading.Thread):
     stop_signal = False
 
-    def __init__(self, e_start=0, e_end=0, e_steps=0, sc2env=None, thread_num=999):
+    def __init__(self, e_start=0, e_end=0, e_steps=0, sc2env=None, thread_num=999, log_data=False):
         threading.Thread.__init__(self)
         self.logger = logging.getLogger('sc2rl.' + __name__ + " | " + str(thread_num))
+        self.start_time = time.time()
 
         self.episodes = 0
         self.rewards = []
         self.steps = []
-
+        self.log_data = log_data
         if sc2env is not None:
             self.env = sc2env
         else:
-            self.env = SimpleEnv()
+            self.env = helpers.get_env_wrapper()
 
         self.agent = Agent(self.env.get_action_space(), e_start or FLAGS.e_start, e_end or FLAGS.e_end, e_steps or FLAGS.e_steps)
 
     def run_episode(self):
+        if time.time() - self.start_time > 1800:
+            self.env = None
+            time.sleep(1)
+            self.env = helpers.get_env_wrapper()
+            self.start_time = time.time()
         self.episodes += 1
         s = self.env.reset()
         R = 0
@@ -43,15 +49,16 @@ class Environment(threading.Thread):
             if done:  # terminal state
                 s_ = None
 
-            self.agent.train(s, a, r, s_)
+            if not FLAGS.validate:
+                self.agent.train(s, a, r, s_)
 
             s = s_
             R += r
 
             if done or self.stop_signal:
                 self.episodes += 1
-                self.rewards.append(R)
-                self.steps.append(step)
+                if self.log_data:
+                    self.rewards.append(R)
                 break
 
     def run(self):
@@ -60,3 +67,4 @@ class Environment(threading.Thread):
 
     def stop(self):
         self.stop_signal = True
+
