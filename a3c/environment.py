@@ -49,7 +49,8 @@ class Environment(threading.Thread):
             if done:  # terminal state
                 s_ = None
 
-            self.agent.train(s, a, r, s_)
+            if not FLAGS.validate:
+                self.agent.train(s, a, r, s_)
 
             s = s_
             R += r
@@ -58,7 +59,6 @@ class Environment(threading.Thread):
                 self.episodes += 1
                 if self.log_data:
                     self.rewards.append(R)
-                    self.steps.append(step)
                 break
 
     def run(self):

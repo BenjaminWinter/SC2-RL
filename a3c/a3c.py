@@ -19,7 +19,6 @@ flags.DEFINE_integer('threads', 8, 'Number of Parallel Agents')
 flags.DEFINE_integer('optimizers', 1, 'Number of Optimizer Threads')
 flags.DEFINE_integer('run_time', 300, 'Number of Seconds to train')
 
-
 class A3c:
     def __init__(self, episodes, a_space, s_space):
         """
@@ -49,7 +48,6 @@ class A3c:
             time.sleep(FLAGS.run_time)
             run_env.stop()
             plt.plot(run_env.rewards, 'r')
-            plt.plot(run_env.steps, 'g')
             plt.show()
             return
 
