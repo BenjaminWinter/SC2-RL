@@ -42,6 +42,8 @@ flags.DEFINE_string("map", None, "Name of a map to use.")
 flags.DEFINE_bool("profile", False, "Whether to turn on code profiling.")
 flags.DEFINE_bool("trace", False, "Whether to trace the code execution.")
 flags.DEFINE_string('algorithm', 'test.Test', 'Which Algorithm to run')
+flags.DEFINE_bool("validate", False, 'Validation instead of training mode')
+
 flags.mark_flag_as_required("map")
 
 
