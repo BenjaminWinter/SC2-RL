@@ -113,7 +113,7 @@ def get_env_wrapper():
     if FLAGS.map in ['Vulture_Firebats', 'Marine_Zerglings']:
         from util.environments.simple_vulture_env import SimpleVultureEnv
         return SimpleVultureEnv()
-    if FLAGS.map == 'CollectMineralsMod':
+    if FLAGS.map == 'CollectMineralShardsMod':
         from util.environments.simple_collectminerals_env import SimpleCollectMineralEnv
         return SimpleCollectMineralEnv()
 

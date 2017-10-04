@@ -30,7 +30,7 @@ class A3c:
         shared.gamma_n = FLAGS.gamma ** FLAGS.n_step_return
 
         if not FLAGS.validate:
-            self.envs = [Environment(thread_num=i) for i in range(FLAGS.threads)]
+            self.envs = [Environment(thread_num=i, log_data=True) for i in range(FLAGS.threads)]
             self.opts = [Optimizer(thread_num=i) for i in range(FLAGS.optimizers)]
 
         none_state = np.zeros(s_space)
@@ -54,7 +54,6 @@ class A3c:
             plt.show()
             return
 
-
         self.logger.info('starting Training')
         # tracemalloc.start()
         # yappi.start()
@@ -76,9 +75,12 @@ class A3c:
             self.logger.info('Steps: ' + str(e.steps))
             sps += sum(e.steps)
             episodes += e.episodes
+            self.logger.info(e.rewards)
             e.join()
+            plt.plot(e.rewards)
         self.logger.info('Episodes: ' + str(episodes))
         self.logger.info('Steps per Second: ' + str(sps / FLAGS.run_time))
+        plt.show()
 
         for o in self.opts:
             o.stop()
@@ -114,9 +116,9 @@ class A3c:
 
         shared.brain.model.save(FLAGS.save_model)
         # run_env = Environment(e_start=0., e_end=0., log_data=True)
-        # run_env.run()
+        # run_env.start()
         # time.sleep(300)
         # run_env.stop()
-        # plt.plot(e.rewards, 'r')
-        # plt.plot(e.steps, 'g')
+        # run_env.join()
+        # plt.plot(run_env.rewards, 'r')
         # plt.show()

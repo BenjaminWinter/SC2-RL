@@ -14,12 +14,14 @@ class Scenario(lib.Map):
     step_mul = 8
 
 
-scenarios = [
-    "Vulture_Firebats",
-    "Stalkers_Stalkers",
-    "Hydras_Zealots"
-]
+def load_scenarios():
+    scenarios = [
+        "Vulture_Firebats",
+        "Stalkers_Stalkers",
+        "Hydras_Zealots",
+        "CollectMineralShardsMod"
+    ]
 
-
-for name in scenarios:
-    globals()[name] = type(name, (Scenario,), dict(filename=name))
+    for name in scenarios:
+        globals()[name] = type(name, (Scenario,), dict(filename=name))
+        print(globals()[name])

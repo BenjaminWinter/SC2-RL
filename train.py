@@ -9,6 +9,7 @@ import time
 import numpy as np
 import os
 
+
 from pysc2 import maps
 from pysc2.env import sc2_env
 
@@ -17,9 +18,9 @@ import gflags as flags
 import logging
 
 import util.helpers as helpers
-import a3c.a3c
-import scenarios
 
+import a3c.a3c
+import maps.scenarios as scenarios
 
 FLAGS = flags.FLAGS
 flags.DEFINE_bool("render", False, "Whether to render with pygame.")
@@ -62,6 +63,7 @@ def main(argv):
 
     #stopwatch.sw.enabled = FLAGS.profile or FLAGS.trace
     #stopwatch.sw.trace = FLAGS.trace
+    scenarios.load_scenarios()
 
     maps.get(FLAGS.map)  # Assert the map exists.
 

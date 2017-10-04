@@ -18,6 +18,7 @@ class Environment(threading.Thread):
         self.logger = logging.getLogger('sc2rl.' + __name__ + " | " + str(thread_num))
         self.start_time = time.time()
 
+        self.e_start = e_start
         self.episodes = 0
         self.rewards = []
         self.steps = []
@@ -49,7 +50,7 @@ class Environment(threading.Thread):
             if done:  # terminal state
                 s_ = None
 
-            if not FLAGS.validate:
+            if (not FLAGS.validate) or self.e_start > 0:
                 self.agent.train(s, a, r, s_)
 
             s = s_
