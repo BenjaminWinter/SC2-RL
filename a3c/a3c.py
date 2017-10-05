@@ -21,6 +21,7 @@ flags.DEFINE_integer('run_time', 300, 'Number of Seconds to train')
 flags.DEFINE_string('load_model', None, 'Keras model to load')
 flags.DEFINE_string('save_model', 'models/training_model', 'Where to save Keras model')
 
+
 class A3c:
     def __init__(self, episodes, a_space, s_space):
         """
@@ -64,7 +65,9 @@ class A3c:
             e.start()
 
         time.sleep(FLAGS.run_time)
-
+        for i in range(10):
+            time.sleep(FLAGS.run_time/10)
+            self.logger.info("Progress:" + str((i+1)*10) + "%")
         episodes = 0
         sps=0
         for e in self.envs:
@@ -77,10 +80,8 @@ class A3c:
             episodes += e.episodes
             self.logger.info(e.rewards)
             e.join()
-            plt.plot(e.rewards)
         self.logger.info('Episodes: ' + str(episodes))
         self.logger.info('Steps per Second: ' + str(sps / FLAGS.run_time))
-        plt.show()
 
         for o in self.opts:
             o.stop()
@@ -115,10 +116,12 @@ class A3c:
         print("Training finished")
 
         shared.brain.model.save(FLAGS.save_model)
-        # run_env = Environment(e_start=0., e_end=0., log_data=True)
-        # run_env.start()
-        # time.sleep(300)
-        # run_env.stop()
-        # run_env.join()
-        # plt.plot(run_env.rewards, 'r')
-        # plt.show()
+        run_env = Environment(e_start=0., e_end=0., log_data=True)
+        run_env.start()
+        time.sleep(300)
+        run_env.stop()
+        run_env.join()
+        self.logger.info('run_env Rewards:')
+        self.logger.info(run_env.rewards)
+        plt.plot(run_env.rewards, 'r')
+        plt.savefig('logs/plot.png')
