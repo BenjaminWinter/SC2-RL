@@ -1,4 +1,5 @@
 import threading
+import multiprocessing as mp
 import tensorflow as tf
 import time
 import logging
@@ -20,7 +21,7 @@ flags.DEFINE_integer('min_batch', 32, 'batch Size')
 
 class Brain:
     train_queue = [[], [], [], [], []]  # s, a, r, s', s' terminal mask
-    lock_queue = threading.Lock()
+    lock_queue = mp.Lock()
 
     def __init__(self, s_space, a_space, none_state, saved_model=False):
         self.logger = logging.getLogger('sc2rl.' + __name__)
@@ -101,18 +102,19 @@ class Brain:
             time.sleep(0.01)  # yield
             return
 
-        with self.lock_queue:
-            if len(self.train_queue[0]) < FLAGS.min_batch:  # more thread could have passed without lock
-                return  # we can't yield inside lock
+        self.lock_queue.acquire()
+        if len(self.train_queue[0]) < FLAGS.min_batch:  # more thread could have passed without lock
+            return  # we can't yield inside lock
 
-            s, a, r, s_, s_mask = self.train_queue
-            self.train_queue = [[], [], [], [], []]
+        s, a, r, s_, s_mask = self.train_queue
+        self.train_queue = [[], [], [], [], []]
+        self.lock_queue.release()
 
-            s = np.stack(s)
-            a = np.vstack(a)
-            r = np.vstack(r)
-            s_ = np.stack(s_)
-            s_mask = np.vstack(s_mask)
+        s = np.stack(s)
+        a = np.vstack(a)
+        r = np.vstack(r)
+        s_ = np.stack(s_)
+        s_mask = np.vstack(s_mask)
 
         if len(s) > 5 * FLAGS.min_batch:
             self.logger.warning("Optimizer alert! Minimizing batch of %d" % len(s))
@@ -124,17 +126,18 @@ class Brain:
         self.session.run(minimize, feed_dict={s_t: s, a_t: a, r_t: r})
 
     def train_push(self, s, a, r, s_):
-        with self.lock_queue:
-            self.train_queue[0].append(s)
-            self.train_queue[1].append(a)
-            self.train_queue[2].append(r)
+        self.lock_queue.acquire()
+        self.train_queue[0].append(s)
+        self.train_queue[1].append(a)
+        self.train_queue[2].append(r)
 
-            if s_ is None:
-                self.train_queue[3].append(self.none_state)
-                self.train_queue[4].append(0.)
-            else:
-                self.train_queue[3].append(s_)
-                self.train_queue[4].append(1.)
+        if s_ is None:
+            self.train_queue[3].append(self.none_state)
+            self.train_queue[4].append(0.)
+        else:
+            self.train_queue[3].append(s_)
+            self.train_queue[4].append(1.)
+        self.lock_queue.release()
 
     def predict(self, s):
         with self.default_graph.as_default():

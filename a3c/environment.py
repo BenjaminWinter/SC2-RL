@@ -4,20 +4,23 @@ import time
 import logging
 from .agent import Agent
 import util.helpers as helpers
+import multiprocessing as mp
 
 FLAGS = flags.FLAGS
 
-flags.DEFINE_float('thread_delay', 0.00001, 'Delay of Workers. used to use more Workers than physical CPUs')
+flags.DEFINE_float('thread_delay', 0.2, 'Delay of Workers. used to use more Workers than physical CPUs')
 
 
-class Environment(threading.Thread):
+class Environment(mp.Process):
     stop_signal = False
 
-    def __init__(self, e_start=0, e_end=0, e_steps=0, sc2env=None, thread_num=999, log_data=False):
-        threading.Thread.__init__(self)
+    def __init__(self, e_start=0, e_end=0, e_steps=0, sc2env=None, thread_num=999, log_data=False, brain=None):
+        super(Environment, self).__init__()
         self.logger = logging.getLogger('sc2rl.' + __name__ + " | " + str(thread_num))
         self.start_time = time.time()
 
+
+        self.logger.info(str(repr(brain)))
         self.e_start = e_start
         self.episodes = 0
         self.rewards = []
@@ -28,7 +31,7 @@ class Environment(threading.Thread):
         else:
             self.env = helpers.get_env_wrapper()
 
-        self.agent = Agent(self.env.get_action_space(), e_start or FLAGS.e_start, e_end or FLAGS.e_end, e_steps or FLAGS.e_steps)
+        self.agent = Agent(self.env.get_action_space(), e_start or FLAGS.e_start, e_end or FLAGS.e_end, e_steps or FLAGS.e_steps, brain=brain)
 
     def run_episode(self):
         if time.time() - self.start_time > 1800:

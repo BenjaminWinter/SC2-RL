@@ -3,6 +3,8 @@ import gflags as flags
 import numpy as np
 import logging
 import matplotlib.pyplot as plt
+import multiprocessing as mp
+from multiprocessing.managers import BaseManager
 
 from .environment import Environment
 from .optimizer import Optimizer
@@ -22,21 +24,33 @@ flags.DEFINE_string('load_model', None, 'Keras model to load')
 flags.DEFINE_string('save_model', 'models/training_model', 'Where to save Keras model')
 
 
+class MyManager(BaseManager):
+    pass
+
+MyManager.register('Brain', Brain)
+
+
 class A3c:
     def __init__(self, episodes, a_space, s_space):
         """
         :type _env: BaseEnv
         :type episodes Integer
+
         """
-        shared.gamma_n = FLAGS.gamma ** FLAGS.n_step_return
-
-        if not FLAGS.validate:
-            self.envs = [Environment(thread_num=i, log_data=True) for i in range(FLAGS.threads)]
-            self.opts = [Optimizer(thread_num=i) for i in range(FLAGS.optimizers)]
-
         none_state = np.zeros(s_space)
         none_state = none_state.reshape((FLAGS.screen_resolution, FLAGS.screen_resolution, 1))
-        shared.brain = Brain(s_space, a_space, none_state, saved_model=FLAGS.load_model)
+
+        shared.gamma_n = FLAGS.gamma ** FLAGS.n_step_return
+
+        self.manager = MyManager()
+        self.manager.start()
+        shared_brain = self.manager.Brain(s_space, a_space, none_state)
+
+        if not FLAGS.validate:
+            self.envs = [Environment(thread_num=i, log_data=True, brain=shared_brain) for i in range(FLAGS.threads)]
+            self.opts = [Optimizer(thread_num=i, brain=shared_brain) for i in range(FLAGS.optimizers)]
+
+        # shared.brain = Brain(s_space, a_space, none_state, saved_model=FLAGS.load_model)
 
         self.runtime = FLAGS.run_time
 
