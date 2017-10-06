@@ -7,7 +7,7 @@ import util.helpers as helpers
 
 FLAGS = flags.FLAGS
 
-flags.DEFINE_float('thread_delay', 0.00001, 'Delay of Workers. used to use more Workers than physical CPUs')
+flags.DEFINE_float('thread_delay', 0.0001, 'Delay of Workers. used to use more Workers than physical CPUs')
 
 
 class Environment(threading.Thread):
