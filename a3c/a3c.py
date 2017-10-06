@@ -64,7 +64,6 @@ class A3c:
         for e in self.envs:
             e.start()
 
-        time.sleep(FLAGS.run_time)
         for i in range(10):
             time.sleep(FLAGS.run_time/10)
             self.logger.info("Progress:" + str((i+1)*10) + "%")
