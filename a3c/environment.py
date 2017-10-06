@@ -8,7 +8,7 @@ import multiprocessing as mp
 
 FLAGS = flags.FLAGS
 
-flags.DEFINE_float('thread_delay', 0.2, 'Delay of Workers. used to use more Workers than physical CPUs')
+flags.DEFINE_float('thread_delay', 0.0001, 'Delay of Workers. used to use more Workers than physical CPUs')
 
 
 class Environment(mp.Process):
@@ -19,8 +19,6 @@ class Environment(mp.Process):
         self.logger = logging.getLogger('sc2rl.' + __name__ + " | " + str(thread_num))
         self.start_time = time.time()
 
-
-        self.logger.info(str(repr(brain)))
         self.e_start = e_start
         self.episodes = 0
         self.rewards = []

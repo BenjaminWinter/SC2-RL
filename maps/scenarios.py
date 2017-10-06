@@ -19,7 +19,8 @@ def load_scenarios():
         "Vulture_Firebats",
         "Stalkers_Stalkers",
         "Hydras_Zealots",
-        "CollectMineralShardsMod"
+        "CollectMineralShardsMod",
+	"MoveToBeaconMod"
     ]
 
     for name in scenarios:
