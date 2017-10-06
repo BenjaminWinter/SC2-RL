@@ -21,6 +21,8 @@ flags.DEFINE_integer('min_batch', 32, 'batch Size')
 
 class Brain:
     train_queue = [[], [], [], [], []]  # s, a, r, s', s' terminal mask
+    episodes = 0
+    rewards = []
     lock_queue = mp.Lock()
 
     def __init__(self, s_space, a_space, none_state, saved_model=False):
@@ -153,4 +155,15 @@ class Brain:
         with self.default_graph.as_default():
             p, v = self.model.predict(s)
             return v
-
+    def get_episodes(self):
+        return self.episodes
+    def add_episodes(self, eps):
+        self.lock_queue.acquire()
+        self.episodes += eps
+        self.lock_queue.release()
+    def get_rewards(self):
+        return self.rewards
+    def add_rewards(self, arr):
+        self.lock_queue.acquire()
+        self.rewards.append(arr)
+        self.lock_queue.release()

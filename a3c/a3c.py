@@ -23,12 +23,10 @@ flags.DEFINE_integer('run_time', 300, 'Number of Seconds to train')
 flags.DEFINE_string('load_model', None, 'Keras model to load')
 flags.DEFINE_string('save_model', 'models/training_model', 'Where to save Keras model')
 
-
 class MyManager(BaseManager):
     pass
 
 MyManager.register('Brain', Brain)
-
 
 class A3c:
     def __init__(self, episodes, a_space, s_space):
@@ -44,11 +42,12 @@ class A3c:
 
         self.manager = MyManager()
         self.manager.start()
-        shared_brain = self.manager.Brain(s_space, a_space, none_state)
+        self.shared_brain = self.manager.Brain(s_space, a_space, none_state)
+        self.stop_signal = mp.Value('i', 0)
 
         if not FLAGS.validate:
-            self.envs = [Environment(thread_num=i, log_data=True, brain=shared_brain) for i in range(FLAGS.threads)]
-            self.opts = [Optimizer(thread_num=i, brain=shared_brain) for i in range(FLAGS.optimizers)]
+            self.envs = [Environment(thread_num=i, log_data=True, brain=self.shared_brain, stop=self.stop_signal) for i in range(FLAGS.threads)]
+            self.opts = [Optimizer(thread_num=i, brain=self.shared_brain, stop=self.stop_signal) for i in range(FLAGS.optimizers)]
 
         # shared.brain = Brain(s_space, a_space, none_state, saved_model=FLAGS.load_model)
 
@@ -81,25 +80,18 @@ class A3c:
         for i in range(10):
             time.sleep(FLAGS.run_time/10)
             self.logger.info("Progress:" + str((i+1)*10) + "%")
-        episodes = 0
-        sps=0
+
+        self.stop_signal.value = 1
+
         for e in self.envs:
-            e.stop()
-        for e in self.envs:
-            self.logger.info('Rewards:')
-            self.logger.info(np.array(e.rewards))
-            self.logger.info('Steps: ' + str(e.steps))
-            sps += sum(e.steps)
-            episodes += e.episodes
-            self.logger.info(e.rewards)
             e.join()
-        self.logger.info('Episodes: ' + str(episodes))
-        self.logger.info('Steps per Second: ' + str(sps / FLAGS.run_time))
 
         for o in self.opts:
-            o.stop()
-        for o in self.opts:
             o.join()
+
+        self.logger.info('Rewards:')
+        self.logger.info(self.shared_brain.get_rewards())
+        self.logger.info('Episodes:' + str(self.shared_brain.get_episodes()))
         # yappi.stop()
         #
         # OUT_FILE = 'logs/profiling'
