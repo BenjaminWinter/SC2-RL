@@ -113,7 +113,7 @@ def get_env_wrapper():
     if FLAGS.map in ['Vulture_Firebats', 'Marine_Zerglings']:
         from util.environments.simple_vulture_env import SimpleVultureEnv
         return SimpleVultureEnv()
-    if FLAGS.map == 'CollectMineralShardsMod':
+    if FLAGS.map == 'CollectMineralShardsMod' or FLAGS.map == 'MoveToBeaconMod':
         from util.environments.simple_collectminerals_env import SimpleCollectMineralEnv
         return SimpleCollectMineralEnv()
 
@@ -121,6 +121,8 @@ def get_env_wrapper():
 def get_shifted_position(direction, obs, dist):
     player_relative = obs.observation["screen"][_PLAYER_RELATIVE]
     player_y, player_x = (player_relative == _PLAYER_FRIENDLY).nonzero()
+    if not player_x.any():
+        return [42, 42]
     player = [player_y[0], player_x[0]]
    # ORDER: left,right,up,down
     if direction == 0:
