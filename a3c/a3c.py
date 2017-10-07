@@ -2,6 +2,8 @@ import time
 import gflags as flags
 import numpy as np
 import logging
+import matplotlib as mpl
+mpl.use('Agg')
 import matplotlib.pyplot as plt
 
 from .environment import Environment
@@ -78,10 +80,11 @@ class A3c:
             sps += sum(e.steps)
             episodes += e.episodes
             self.logger.info(e.rewards)
+            plt.plot(e.rewards)
             e.join()
         self.logger.info('Episodes: ' + str(episodes))
         self.logger.info('Steps per Second: ' + str(sps / FLAGS.run_time))
-
+        plt.savefig('logs/plot.png')
         for o in self.opts:
             o.stop()
         for o in self.opts:
