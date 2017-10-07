@@ -10,6 +10,7 @@ from .environment import Environment
 from .optimizer import Optimizer
 from .brain import Brain
 import a3c.shared as shared
+import random
 
 FLAGS = flags.FLAGS
 flags.DEFINE_float('e_start', 0.4, 'Starting Epsilon')
@@ -24,16 +25,20 @@ flags.DEFINE_string('load_model', None, 'Keras model to load')
 flags.DEFINE_string('save_model', 'models/training_model', 'Where to save Keras model')
 
 
+
 class A3c:
     def __init__(self, episodes, a_space, s_space):
         """
         :type _env: BaseEnv
         :type episodes Integer
         """
+        e_starts = [random.uniform(0.3, 0.7) for x in range(FLAGS.threads)]
+        e_ends = [random.uniform(0.05, 0.2) for x in range(FLAGS.threads)]
+
         shared.gamma_n = FLAGS.gamma ** FLAGS.n_step_return
 
         if not FLAGS.validate:
-            self.envs = [Environment(thread_num=i, log_data=True) for i in range(FLAGS.threads)]
+            self.envs = [Environment(thread_num=i, log_data=True, e_start=e_starts[i], e_end=e_ends[i]) for i in range(FLAGS.threads)]
             self.opts = [Optimizer(thread_num=i) for i in range(FLAGS.optimizers)]
 
         none_state = np.zeros(s_space)
