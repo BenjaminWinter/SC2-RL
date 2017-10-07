@@ -50,24 +50,30 @@ class Brain:
         c_input = Input(shape=(FLAGS.screen_resolution, FLAGS.screen_resolution, 1))
         c1 = Conv2D(
             32,
-            kernel_size=5,
-            strides=(1, 1),
-            activation='relu'
-        )(c_input)
-        pool1 = MaxPool2D(pool_size=(2, 2), strides=(1, 1))(c1)
-        c2 = Conv2D(
-            64,
             kernel_size=3,
             strides=(1, 1),
             activation='relu'
-        )(pool1)
-        pool2 = MaxPool2D(pool_size=(2, 2), strides=(1, 1))(c2)
-        flatten = Flatten()(pool2)
-        dense1 = Dense(100, activation='relu')(flatten)
+        )(c_input)
+        #pool1 = MaxPool2D(pool_size=(2, 2), strides=(1, 1))(c1)
+        c2 = Conv2D(
+            64,
+            kernel_size=4,
+            strides=(2, 2),
+            activation='relu'
+        )(c1)
+        c3 = Conv2D(
+            32,
+            kernel_size=6,
+            strides=(3, 3),
+            activation='relu'
+        )(c2)
+        #pool2 = MaxPool2D(pool_size=(2, 2), strides=(1, 1))(c2)
+        flatten = Flatten()(c3)
+        dense1 = Dense(512, activation='relu')(flatten)
         dense2 = Dense(50, activation='relu')(dense1)
 
         out_actions = Dense(self.a_space, activation='softmax')(dense2)
-        out_value = Dense(1, activation='linear')(dense1)
+        out_value = Dense(1, activation='linear')(dense2)
 
         model = Model(inputs=[c_input], outputs=[out_actions, out_value])
         model._make_predict_function()  # have to initialize before threading
