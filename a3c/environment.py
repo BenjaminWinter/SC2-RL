@@ -13,7 +13,7 @@ flags.DEFINE_float('thread_delay', 0.0001, 'Delay of Workers. used to use more W
 
 class Environment(mp.Process):
 
-    def __init__(self, e_start=0, e_end=0, e_steps=0, sc2env=None, thread_num=999, log_data=False, brain=None, stop=None):
+    def __init__(self, none_state, e_start=0, e_end=0, e_steps=0, sc2env=None, thread_num=999, log_data=False, brain=None, stop=None, t_queue=None):
         super(Environment, self).__init__()
         self.logger = logging.getLogger('sc2rl.' + __name__ + " | " + str(thread_num))
         self.start_time = time.time()
@@ -31,7 +31,7 @@ class Environment(mp.Process):
         else:
             self.env = helpers.get_env_wrapper()
 
-        self.agent = Agent(self.env.get_action_space(), e_start or FLAGS.e_start, e_end or FLAGS.e_end, e_steps or FLAGS.e_steps, brain=brain)
+        self.agent = Agent(none_state, self.env.get_action_space(), e_start or FLAGS.e_start, e_end or FLAGS.e_end, e_steps or FLAGS.e_steps, brain=brain, t_queue=t_queue)
 
     def run_episode(self):
         if time.time() - self.start_time > 1800:

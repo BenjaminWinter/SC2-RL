@@ -42,11 +42,13 @@ class A3c:
 
         self.manager = MyManager()
         self.manager.start()
-        self.shared_brain = self.manager.Brain(s_space, a_space, none_state)
+        self.q_manager = mp.Manager()
+        self.queue = self.q_manager.Queue()
+        self.shared_brain = self.manager.Brain(s_space, a_space, none_state, t_queue=self.queue)
         self.stop_signal = mp.Value('i', 0)
 
         if not FLAGS.validate:
-            self.envs = [Environment(thread_num=i, log_data=True, brain=self.shared_brain, stop=self.stop_signal) for i in range(FLAGS.threads)]
+            self.envs = [Environment(none_state, thread_num=i, log_data=True, brain=self.shared_brain, stop=self.stop_signal, t_queue=self.queue) for i in range(FLAGS.threads)]
             self.opts = [Optimizer(thread_num=i, brain=self.shared_brain, stop=self.stop_signal) for i in range(FLAGS.optimizers)]
 
         # shared.brain = Brain(s_space, a_space, none_state, saved_model=FLAGS.load_model)

@@ -20,18 +20,19 @@ flags.DEFINE_integer('min_batch', 32, 'batch Size')
 
 
 class Brain:
-    train_queue = [[], [], [], [], []]  # s, a, r, s', s' terminal mask
     episodes = 0
     rewards = []
     steps = []
     lock_queue = mp.Lock()
 
-    def __init__(self, s_space, a_space, none_state, saved_model=False):
+    def __init__(self, s_space, a_space, none_state, saved_model=False, t_queue=None):
         self.logger = logging.getLogger('sc2rl.' + __name__)
 
         self.s_space = s_space
         self.a_space = a_space
         self.none_state = none_state
+        self.queue = t_queue
+
         self.session = tf.Session()
         K.set_session(self.session)
         K.manual_variable_initialization(True)
@@ -98,23 +99,41 @@ class Brain:
         return s_t, a_t, r_t, minimize
 
     def optimize(self):
-        if len(self.train_queue[0]) < FLAGS.min_batch:
-            time.sleep(0.01)  # yield
+
+        if self.queue.qsize() < FLAGS.min_batch:
+            time.sleep(FLAGS.thread_delay)  # yield
             return
+        s = []
+        a = []
+        r = []
+        s_ = []
+        s_mask = []
 
-        self.lock_queue.acquire()
-        if len(self.train_queue[0]) < FLAGS.min_batch:  # more thread could have passed without lock
-            return  # we can't yield inside lock
+        while not self.queue.empty():
+            arr = self.queue.get()
+            #print(str(arr[0].shape) + " | " + str(arr[1]) + " | " + str(arr[2]) + " | " + str(arr[3].shape) + " | " + str(arr[4]))
 
-        s, a, r, s_, s_mask = self.train_queue
-        self.train_queue = [[], [], [], [], []]
-        self.lock_queue.release()
-
-        s = np.stack(s)
-        a = np.vstack(a)
-        r = np.vstack(r)
-        s_ = np.stack(s_)
-        s_mask = np.vstack(s_mask)
+            s.append(arr[0])
+            a.append(arr[1])
+            r.append(arr[2])
+            s_.append(arr[3])
+            s_mask.append(arr[4])
+        try:
+            s = np.stack(s)
+            a = np.vstack(a)
+            r = np.vstack(r)
+            s_ = np.stack(s_)
+            s_mask = np.vstack(s_mask)
+        except ValueError:
+            print('***************************')
+            for x in range(len(s)):
+                print('s.shape:' + str(s[x].shape))
+                print('a:' + str(a[x]))
+                print('r:' + str(r[x]))
+                print('s_:' + str(s_[x].shape))
+                print('s_mask:' + str(s_mask[x]))
+                print('________________________')
+            print('---------------------------')
 
         if len(s) > 5 * FLAGS.min_batch:
             self.logger.warning("Optimizer alert! Minimizing batch of %d" % len(s))
@@ -124,20 +143,6 @@ class Brain:
 
         s_t, a_t, r_t, minimize = self.graph
         self.session.run(minimize, feed_dict={s_t: s, a_t: a, r_t: r})
-
-    def train_push(self, s, a, r, s_):
-        self.lock_queue.acquire()
-        self.train_queue[0].append(s)
-        self.train_queue[1].append(a)
-        self.train_queue[2].append(r)
-
-        if s_ is None:
-            self.train_queue[3].append(self.none_state)
-            self.train_queue[4].append(0.)
-        else:
-            self.train_queue[3].append(s_)
-            self.train_queue[4].append(1.)
-        self.lock_queue.release()
 
     def predict(self, s):
         with self.default_graph.as_default():
