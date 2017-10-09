@@ -47,7 +47,7 @@ class Brain:
 
     def _build_model(self):
 
-        c_input = Input(shape=(FLAGS.screen_resolution, FLAGS.screen_resolution, 1))
+        c_input = Input(shape=self.s_space)
         c1 = Conv2D(
             32,
             kernel_size=3,

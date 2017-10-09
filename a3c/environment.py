@@ -28,7 +28,7 @@ class Environment(threading.Thread):
         else:
             self.env = helpers.get_env_wrapper()
 
-        self.agent = Agent(self.env.get_action_space(), e_start or FLAGS.e_start, e_end or FLAGS.e_end, e_steps or FLAGS.e_steps)
+        self.agent = Agent(self.env.action_space, e_start or FLAGS.e_start, e_end or FLAGS.e_end, e_steps or FLAGS.e_steps)
 
     def run_episode(self):
 #        if time.time() - self.start_time > 1800:

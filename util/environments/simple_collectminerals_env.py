@@ -32,7 +32,7 @@ class SimpleCollectMineralEnv(BaseEnv):
         return s_, r, self._env_timestep[0].last(), []
 
     def get_state(self):
-        state = self._env_timestep[0].observation['screen'][_PLAYER_RELATIVE] * 55
+        state = self._env_timestep[0].observation['screen'][_PLAYER_RELATIVE]
         return state.reshape(state.shape + (1, ))
 
     def get_sc2_action(self, action):

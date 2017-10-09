@@ -33,11 +33,13 @@ class BaseEnv:
         self._env_timestep = self._env.reset()
         return self.get_state()
 
-    def get_action_space(self):
+    @property
+    def action_space(self):
         return len(self._actions)
 
-    def get_state_space(self):
-        return self.get_state().flatten().shape[0]
+    @property
+    def observation_space(self):
+        return self.get_state().shape
 
     def get_state(self):
         pass
