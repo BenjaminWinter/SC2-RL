@@ -32,7 +32,7 @@ class A3c:
         :type _env: BaseEnv
         :type episodes Integer
         """
-        e_starts = [random.uniform(0.3, 0.7) for x in range(FLAGS.threads)]
+        e_starts = [random.uniform(0.2, 0.4) for x in range(FLAGS.threads)]
         e_ends = [random.uniform(0.05, 0.2) for x in range(FLAGS.threads)]
 
         shared.gamma_n = FLAGS.gamma ** FLAGS.n_step_return
@@ -122,7 +122,7 @@ class A3c:
 
         print("Training finished")
 
-        # shared.brain.model.save(FLAGS.save_model)
+        shared.brain.model.save(FLAGS.save_model)
         # run_env = Environment(e_start=0., e_end=0., log_data=True)
         # run_env.start()
         # time.sleep(300)
