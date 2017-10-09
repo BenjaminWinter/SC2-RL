@@ -62,6 +62,7 @@ class Environment(mp.Process):
             if done or self.stop.value:
                 if self.log_data:
                     self.rewards.append(R)
+                    self.steps.append(step)
                 break
 
     def run(self):
@@ -69,4 +70,5 @@ class Environment(mp.Process):
             self.run_episode()
         self.brain.add_episodes(self.episodes)
         self.brain.add_rewards(self.rewards)
+        self.brain.add_steps(self.steps)
 

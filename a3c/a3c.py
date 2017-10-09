@@ -92,6 +92,10 @@ class A3c:
         self.logger.info('Rewards:')
         self.logger.info(self.shared_brain.get_rewards())
         self.logger.info('Episodes:' + str(self.shared_brain.get_episodes()))
+        steps = sum(sum(x) for x in self.shared_brain.get_steps())
+        self.logger.info('Steps:' + str(steps))
+        self.logger.info('Steps per Second: ' + str(steps / FLAGS.run_time))
+
         # yappi.stop()
         #
         # OUT_FILE = 'logs/profiling'

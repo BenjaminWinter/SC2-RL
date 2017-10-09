@@ -1,8 +1,8 @@
-import multiprocessing as mp
+import threading
 import a3c.shared as shared
 
 
-class Optimizer(mp.Process):
+class Optimizer(threading.Thread):
 
     def __init__(self, thread_num, brain=None, stop=None):
         super(Optimizer, self).__init__()

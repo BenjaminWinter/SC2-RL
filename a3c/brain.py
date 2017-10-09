@@ -23,6 +23,7 @@ class Brain:
     train_queue = [[], [], [], [], []]  # s, a, r, s', s' terminal mask
     episodes = 0
     rewards = []
+    steps = []
     lock_queue = mp.Lock()
 
     def __init__(self, s_space, a_space, none_state, saved_model=False):
@@ -52,24 +53,21 @@ class Brain:
 
         c_input = Input(shape=(FLAGS.screen_resolution, FLAGS.screen_resolution, 1))
         c1 = Conv2D(
-            32,
-            kernel_size=5,
+            16,
+            kernel_size=4,
             strides=(1, 1),
             activation='relu'
         )(c_input)
-        pool1 = MaxPool2D(pool_size=(2, 2), strides=(1, 1))(c1)
         c2 = Conv2D(
-            64,
-            kernel_size=3,
+            32,
+            kernel_size=8,
             strides=(1, 1),
             activation='relu'
-        )(pool1)
-        pool2 = MaxPool2D(pool_size=(2, 2), strides=(1, 1))(c2)
-        flatten = Flatten()(pool2)
-        dense1 = Dense(100, activation='relu')(flatten)
-        dense2 = Dense(50, activation='relu')(dense1)
+        )(c1)
+        flatten = Flatten()(c2)
+        dense1 = Dense(1024, activation='relu')(flatten)
 
-        out_actions = Dense(self.a_space, activation='softmax')(dense2)
+        out_actions = Dense(self.a_space, activation='softmax')(dense1)
         out_value = Dense(1, activation='linear')(dense1)
 
         model = Model(inputs=[c_input], outputs=[out_actions, out_value])
@@ -155,15 +153,25 @@ class Brain:
         with self.default_graph.as_default():
             p, v = self.model.predict(s)
             return v
+
     def get_episodes(self):
         return self.episodes
     def add_episodes(self, eps):
         self.lock_queue.acquire()
         self.episodes += eps
         self.lock_queue.release()
+
     def get_rewards(self):
         return self.rewards
     def add_rewards(self, arr):
         self.lock_queue.acquire()
         self.rewards.append(arr)
         self.lock_queue.release()
+
+    def get_steps(self):
+        return self.steps
+    def add_steps(self, arr):
+        self.lock_queue.acquire()
+        self.steps.append(arr)
+        self.lock_queue.release()
+
