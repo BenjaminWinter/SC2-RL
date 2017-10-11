@@ -27,10 +27,16 @@ class Agent:
         eps = self.get_epsilon()
 
         self.frames = self.frames + 1
+<<<<<<< Updated upstream
 
         if random.random() < 1:
             return random.randint(0, self.action_space - 1)
 
+=======
+        return random.randint(0, self.action_space - 1)
+        if True:
+            a = 0
+>>>>>>> Stashed changes
         else:
             s = np.array([s])
             p = shared.brain.predict_p(s)[0]

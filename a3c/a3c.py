@@ -5,7 +5,7 @@ import logging
 import matplotlib as mpl
 mpl.use('Agg')
 import matplotlib.pyplot as plt
-
+import tracemalloc
 from .environment import Environment
 from .optimizer import Optimizer
 from .brain import Brain
@@ -38,7 +38,7 @@ class A3c:
         shared.gamma_n = FLAGS.gamma ** FLAGS.n_step_return
 
         if not FLAGS.validate:
-            self.envs = [Environment(thread_num=i, log_data=True, e_start=e_starts[i], e_end=e_ends[i]) for i in range(FLAGS.threads)]
+            self.envs = [Environment(thread_num=i, log_data=False, e_start=e_starts[i], e_end=e_ends[i]) for i in range(FLAGS.threads)]
             self.opts = [Optimizer(thread_num=i) for i in range(FLAGS.optimizers)]
 
         none_state = np.zeros(s_space.shape[0])
@@ -62,7 +62,7 @@ class A3c:
             return
 
         self.logger.info('starting Training')
-        # tracemalloc.start()
+        tracemalloc.start()
         # yappi.start()
         for o in self.opts:
             o.start()
@@ -118,7 +118,12 @@ class A3c:
         #     tstats.print_all(out=fh)
         #
         # print('[YAPPI OUT]')
+        snapshot = tracemalloc.take_snapshot()
+        top_stats = snapshot.statistics('lineno')
 
+        print("[ Top 10 ]")
+        for stat in top_stats[:10]:
+             print(stat)
         print("Training finished")
 
         shared.brain.model.save(FLAGS.save_model)

@@ -92,7 +92,6 @@ class Brain:
 
             s, a, r, s_, s_mask = self.train_queue
             self.train_queue = [[], [], [], [], []]
-
             s = np.stack(s)
             a = np.vstack(a)
             r = np.vstack(r)
@@ -102,12 +101,17 @@ class Brain:
         if len(s) > 5 * FLAGS.min_batch:
             self.logger.warning("Optimizer alert! Minimizing batch of %d" % len(s))
 
+<<<<<<< Updated upstream
         return
         v = self.predict_v(s_)
+=======
+        #v = self.predict_v(s_)
+        v = 1
+>>>>>>> Stashed changes
         r = r + shared.gamma_n * v * s_mask  # set v to 0 where s_ is terminal state
 
         s_t, a_t, r_t, minimize = self.graph
-        self.session.run(minimize, feed_dict={s_t: s, a_t: a, r_t: r})
+       # self.session.run(minimize, feed_dict={s_t: s, a_t: a, r_t: r})
 
     def train_push(self, s, a, r, s_):
         with self.lock_queue:
