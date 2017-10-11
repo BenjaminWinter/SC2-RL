@@ -41,8 +41,7 @@ class A3c:
             self.envs = [Environment(thread_num=i, log_data=True, e_start=e_starts[i], e_end=e_ends[i]) for i in range(FLAGS.threads)]
             self.opts = [Optimizer(thread_num=i) for i in range(FLAGS.optimizers)]
 
-        none_state = np.zeros(s_space)
-        none_state = none_state.reshape((FLAGS.screen_resolution, FLAGS.screen_resolution, 1))
+        none_state = np.zeros(s_space.shape[0])
         shared.brain = Brain(s_space, a_space, none_state, saved_model=FLAGS.load_model)
 
         self.runtime = FLAGS.run_time

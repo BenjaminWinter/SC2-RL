@@ -16,7 +16,7 @@ from pysc2.env import sc2_env
 from pysc2.lib import app
 import gflags as flags
 import logging
-
+import gym
 import util.helpers as helpers
 
 import a3c.a3c
@@ -67,9 +67,9 @@ def main(argv):
 
     maps.get(FLAGS.map)  # Assert the map exists.
 
-    with helpers.get_env_wrapper() as env:
-        a_space = env.get_action_space()
-        s_space = env.get_state_space()
+    env = gym.make('CartPole-v0')
+    a_space = env.action_space.n
+    s_space = env.observation_space
 
     algo_module, algo_name = FLAGS.algorithm.rsplit(".", 1)
     algo_cls = getattr(importlib.import_module(algo_module), algo_name)

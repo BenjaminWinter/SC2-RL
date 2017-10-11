@@ -4,6 +4,7 @@ import time
 import logging
 from .agent import Agent
 import util.helpers as helpers
+import gym
 
 FLAGS = flags.FLAGS
 
@@ -26,9 +27,9 @@ class Environment(threading.Thread):
         if sc2env is not None:
             self.env = sc2env
         else:
-            self.env = helpers.get_env_wrapper()
+            self.env = gym.make('CartPole-v0')
 
-        self.agent = Agent(self.env.get_action_space(), e_start or FLAGS.e_start, e_end or FLAGS.e_end, e_steps or FLAGS.e_steps)
+        self.agent = Agent(self.env.action_space.n, e_start or FLAGS.e_start, e_end or FLAGS.e_end, e_steps or FLAGS.e_steps)
 
     def run_episode(self):
 #        if time.time() - self.start_time > 1800:

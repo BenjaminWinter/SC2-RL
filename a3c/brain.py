@@ -47,29 +47,8 @@ class Brain:
 
     def _build_model(self):
 
-        c_input = Input(shape=(FLAGS.screen_resolution, FLAGS.screen_resolution, 1))
-        c1 = Conv2D(
-            16,
-            kernel_size=8,
-            strides=(4, 4),
-            activation='relu'
-        )(c_input)
-        #pool1 = MaxPool2D(pool_size=(2, 2), strides=(1, 1))(c1)
-        c2 = Conv2D(
-            32,
-            kernel_size=4,
-            strides=(2, 2),
-            activation='relu'
-        )(c1)
-        c3 = Conv2D(
-            32,
-            kernel_size=6,
-            strides=(3, 3),
-            activation='relu'
-        )(c2)
-        #pool2 = MaxPool2D(pool_size=(2, 2), strides=(1, 1))(c2)
-        flatten = Flatten()(c3)
-        dense1 = Dense(1024, activation='relu')(flatten)
+        c_input = Input(shape=(None, self.s_space.shape[0]))
+        dense1 = Dense(1024, activation='relu')(c_input)
         #dense2 = Dense(50, activation='relu')(dense1)
 
         out_actions = Dense(self.a_space, activation='softmax')(dense1)
@@ -81,7 +60,7 @@ class Brain:
         return model
 
     def _build_graph(self, model):
-        s_t = tf.placeholder(tf.float32, shape=(None, FLAGS.screen_resolution, FLAGS.screen_resolution, 1))
+        s_t = tf.placeholder(tf.float32, shape=(None, self.s_space.shape[0]))
         a_t = tf.placeholder(tf.float32, shape=(None, self.a_space))
         r_t = tf.placeholder(tf.float32, shape=(None, 1))  # not immediate, but discounted n step reward
 
