@@ -68,8 +68,8 @@ def main(argv):
     maps.get(FLAGS.map)  # Assert the map exists.
 
     with helpers.get_env_wrapper() as env:
-        a_space = env.get_action_space()
-        s_space = env.get_state_space()
+        a_space = env.action_space
+        s_space = env.observation_space
 
     algo_module, algo_name = FLAGS.algorithm.rsplit(".", 1)
     algo_cls = getattr(importlib.import_module(algo_module), algo_name)
