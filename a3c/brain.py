@@ -61,14 +61,8 @@ class Brain:
             strides=(2, 2),
             activation='relu'
         )(c1)
-        c3 = Conv2D(
-            32,
-            kernel_size=6,
-            strides=(3, 3),
-            activation='relu'
-        )(c2)
         #pool2 = MaxPool2D(pool_size=(2, 2), strides=(1, 1))(c2)
-        flatten = Flatten()(c3)
+        flatten = Flatten()(c2)
         dense1 = Dense(1024, activation='relu')(flatten)
         #dense2 = Dense(50, activation='relu')(dense1)
 
@@ -81,7 +75,7 @@ class Brain:
         return model
 
     def _build_graph(self, model):
-        s_t = tf.placeholder(tf.float32, shape=(None, FLAGS.screen_resolution, FLAGS.screen_resolution, 1))
+        s_t = tf.placeholder(tf.float32, shape=(None, ) + self.s_space)
         a_t = tf.placeholder(tf.float32, shape=(None, self.a_space))
         r_t = tf.placeholder(tf.float32, shape=(None, 1))  # not immediate, but discounted n step reward
 
