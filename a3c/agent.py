@@ -28,7 +28,7 @@ class Agent:
 
         self.frames = self.frames + 1
 
-        if random.random() < eps:
+        if random.random() < 1:
             return random.randint(0, self.action_space - 1)
 
         else:
@@ -41,6 +41,8 @@ class Agent:
             return a
 
     def train(self, s, a, r, s_):
+        return
+
         def get_sample(memory, n):
             s, a, _, _ = memory[0]
             _, _, _, s_ = memory[n - 1]

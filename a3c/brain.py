@@ -123,6 +123,7 @@ class Brain:
         if len(s) > 5 * FLAGS.min_batch:
             self.logger.warning("Optimizer alert! Minimizing batch of %d" % len(s))
 
+        return
         v = self.predict_v(s_)
         r = r + shared.gamma_n * v * s_mask  # set v to 0 where s_ is terminal state
 
