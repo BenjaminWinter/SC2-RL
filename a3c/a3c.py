@@ -9,6 +9,7 @@ from multiprocessing.managers import BaseManager
 from .environment import Environment
 from .optimizer import Optimizer
 from .brain import Brain
+from .runner import Runner
 import a3c.shared as shared
 
 FLAGS = flags.FLAGS
@@ -40,16 +41,18 @@ class A3c:
 
         shared.gamma_n = FLAGS.gamma ** FLAGS.n_step_return
 
-        self.manager = MyManager()
-        self.manager.start()
         self.q_manager = mp.Manager()
         self.queue = self.q_manager.Queue()
-        self.shared_brain = self.manager.Brain(s_space, a_space, none_state, t_queue=self.queue)
-        self.stop_signal = mp.Value('i', 0)
+
+        shared.brain = Brain(s_space, a_space, none_state, t_queue=self.queue)
 
         if not FLAGS.validate:
-            self.envs = [Environment(none_state, thread_num=i, log_data=True, brain=self.shared_brain, stop=self.stop_signal, t_queue=self.queue) for i in range(FLAGS.threads)]
-            self.opts = [Optimizer(thread_num=i, brain=self.shared_brain, stop=self.stop_signal) for i in range(FLAGS.optimizers)]
+            self.remotes, self.work_remotes = zip(*[mp.Pipe() for _ in range(FLAGS.threads)])
+            self.envs = [Environment(thread_num=i, log_data=True, work_remote=self.work_remotes[i], none_state=none_state, t_queue=self.queue) for i in range(FLAGS.threads)]
+            self.opts = [Optimizer(thread_num=i) for i in range(FLAGS.optimizers)]
+
+        self.runner = Runner(action_space=a_space, remotes=self.remotes)
+
 
         # shared.brain = Brain(s_space, a_space, none_state, saved_model=FLAGS.load_model)
 
@@ -61,7 +64,7 @@ class A3c:
     def run(self):
         if FLAGS.validate:
             self.logger.info('starting validation')
-            run_env = Environment(e_start=0., e_end=0., log_data=True)
+            run_env = Environment(e_start=0., log_data=True)
             run_env.start()
             time.sleep(FLAGS.run_time)
             run_env.stop()
@@ -79,25 +82,22 @@ class A3c:
         for e in self.envs:
             e.start()
 
-        for i in range(10):
-            time.sleep(FLAGS.run_time/10)
-            self.logger.info("Progress:" + str((i+1)*10) + "%")
+        states = self.runner.reset()
+        for i in range(FLAGS.run_time):
+            if i % int(FLAGS.run_time/10) == 0:
+                self.logger.info('Progress:' + str(i / FLAGS.run_time * 100) + "%")
 
-        self.stop_signal.value = 1
+            actions = [self.runner.act(s) for s in states]
+            states = self.runner.step(actions)
+        self.runner.close()
 
         for e in self.envs:
             e.join()
+        for o in self.opts:
+            o.stop()
 
         for o in self.opts:
             o.join()
-
-        self.logger.info('Rewards:')
-        self.logger.info(self.shared_brain.get_rewards())
-        self.logger.info('Episodes:' + str(self.shared_brain.get_episodes()))
-        steps = sum(sum(x) for x in self.shared_brain.get_steps())
-        self.logger.info('Steps:' + str(steps))
-        self.logger.info('Steps per Second: ' + str(steps / FLAGS.run_time))
-
         # yappi.stop()
         #
         # OUT_FILE = 'logs/profiling'

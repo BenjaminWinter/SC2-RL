@@ -7,40 +7,13 @@ FLAGS = flags.FLAGS
 
 
 class Agent:
-    def __init__(self, none_state,  action_space, e_start=0, e_end=0, e_steps=0, brain=None, t_queue=None):
-        self.e_start = e_start or FLAGS.e_start
-        self.e_end = e_end or FLAGS.e_end
-        self.e_steps = e_steps or FLAGS.e_steps
+    def __init__(self, none_state,  action_space, t_queue=None):
         self.action_space = action_space
-        self.brain = brain
         self.frames = 0
         self.memory = []  # used for n_step return
         self.R = 0.
         self.queue = t_queue
         self.none_state = none_state
-
-    def get_epsilon(self):
-        if self.frames >= self.e_steps:
-            return self.e_end
-        else:
-            return self.e_start + self.frames * (self.e_end - self.e_start) / self.e_steps  # linearly interpolate
-
-    def act(self, s):
-        eps = self.get_epsilon()
-
-        self.frames = self.frames + 1
-
-        if random.random() < eps:
-            return random.randint(0, self.action_space - 1)
-
-        else:
-            s = np.array([s])
-            p = self.brain.predict_p(s)[0]
-
-            # a = np.argmax(p)
-            a = np.random.choice(self.action_space, p=p)
-
-            return a
 
     def train(self, s, a, r, s_):
         def get_sample(memory, n):
