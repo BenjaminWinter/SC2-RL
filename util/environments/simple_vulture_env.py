@@ -25,8 +25,8 @@ class SimpleVultureEnv(BaseEnv):
         #
         self._actions = [_MOVE_SCREEN, _ATTACK_SCREEN, _NO_OP]
 
-    def step(self, action):
-        self._env_timestep = self._env.step([self.get_sc2_action(action)])
+    def _step(self, action):
+        self._env_timestep = self._env.step([self._get_sc2_action(action)])
         r = self._env_timestep[0].reward
         s_ = self.get_state()
 
@@ -36,7 +36,7 @@ class SimpleVultureEnv(BaseEnv):
         state = self._env_timestep[0].observation['screen'][_PLAYER_RELATIVE]
         return state.reshape(state.shape + (1, ))
 
-    def get_sc2_action(self, action):
+    def _get_sc2_action(self, action):
         if action == 0:
             args = [[False], helpers.get_attack_coordinates(self._env_timestep[0])]
         elif action == 1:

@@ -1,10 +1,12 @@
 from pysc2.env import sc2_env
 import gflags as flags
+import gym
+import gym.spaces as spaces
 
 FLAGS = flags.FLAGS
 
 
-class BaseEnv:
+class BaseEnv(gym.Env):
     def __enter__(self):
         return self
 
@@ -26,20 +28,20 @@ class BaseEnv:
         self._env_timestep = self._env.reset()
         self._actions = [0]
 
-    def step(self, action):
+    def _step(self, action):
         pass
 
-    def reset(self):
+    def _reset(self):
         self._env_timestep = self._env.reset()
         return self.get_state()
 
     @property
     def action_space(self):
-        return len(self._actions)
+        return spaces.Discrete(len(self._actions))
 
     @property
     def observation_space(self):
-        return self.get_state().shape
+        return spaces.Box(low=0, high=4, shape=self.get_state().shape)
 
     def get_state(self):
         pass

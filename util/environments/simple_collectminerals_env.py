@@ -24,7 +24,7 @@ class SimpleCollectMineralEnv(BaseEnv):
         #
         self._actions = [_MOVE_SCREEN, _MOVE_SCREEN, _MOVE_SCREEN, _MOVE_SCREEN]
 
-    def step(self, action):
+    def _step(self, action):
         self._env_timestep = self._env.step([self.get_sc2_action(action)])
         r = self._env_timestep[0].reward
         s_ = self.get_state()
