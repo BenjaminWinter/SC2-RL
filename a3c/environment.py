@@ -31,10 +31,10 @@ class Environment(threading.Thread):
         self.agent = Agent(self.env.action_space.n, e_start or FLAGS.e_start, e_end or FLAGS.e_end, e_steps or FLAGS.e_steps)
 
     def run_episode(self):
-        if time.time() - self.start_time > 3600:
-            self.env = None
-            self.env = helpers.get_env_wrapper()
-            self.start_time = time.time()
+        # if time.time() - self.start_time > 3600:
+        #     self.env = None
+        #     self.env = helpers.get_env_wrapper()
+        #     self.start_time = time.time()
         self.episodes += 1
         s = self.env.reset()
         R = 0
