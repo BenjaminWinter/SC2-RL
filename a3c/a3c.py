@@ -18,16 +18,14 @@ flags.DEFINE_float('e_end', 0.15, 'End Epsilon')
 flags.DEFINE_float('e_steps', 80000, 'Number of steps over which to decay Epsilon')
 flags.DEFINE_float('gamma', 0.99, 'Discount Value Gamma')
 flags.DEFINE_integer('n_step_return', 8, 'N Step Return Value')
-flags.DEFINE_integer('threads', 8, 'Number of Parallel Agents')
 flags.DEFINE_integer('optimizers', 1, 'Number of Optimizer Threads')
-flags.DEFINE_integer('run_time', 300, 'Number of Seconds to train')
 flags.DEFINE_string('load_model', None, 'Keras model to load')
 flags.DEFINE_string('save_model', 'models/training_model', 'Where to save Keras model')
 
 
 
 class A3c:
-    def __init__(self, episodes, a_space, s_space):
+    def __init__(self, run_time, a_space, s_space):
         """
         :type _env: BaseEnv
         :type episodes Integer
@@ -45,7 +43,7 @@ class A3c:
         none_state = none_state.reshape((FLAGS.screen_resolution, FLAGS.screen_resolution, 1))
         shared.brain = Brain(s_space, a_space, none_state, saved_model=FLAGS.load_model)
 
-        self.runtime = FLAGS.run_time
+        self.runtime = run_time
 
         self.logger = logging.getLogger('sc2rl.' + __name__ )
         self.logger.info('Starting Up A3C Algorithm')

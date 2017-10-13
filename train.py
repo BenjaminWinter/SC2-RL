@@ -20,28 +20,30 @@ import logging
 import util.helpers as helpers
 
 import a3c.a3c
+import baselines.a2c.sc2_a2c
 import maps.scenarios as scenarios
+import sys
 
 FLAGS = flags.FLAGS
+flags.DEFINE_bool("save_replay", True, "Whether to save a replay at the end.")
 flags.DEFINE_bool("render", False, "Whether to render with pygame.")
+flags.DEFINE_bool("profile", False, "Whether to turn on code profiling.")
+flags.DEFINE_bool("trace", False, "Whether to trace the code execution.")
+flags.DEFINE_bool("validate", False, 'Validation instead of training mode')
 flags.DEFINE_integer("screen_resolution", 84,
                      "Resolution for screen feature layers.")
 flags.DEFINE_integer("minimap_resolution", 64,
                      "Resolution for minimap feature layers.")
 flags.DEFINE_integer("game_steps_per_episode", 0, "Game steps per episode.")
-flags.DEFINE_integer("episodes", 1000, "Number of Episodes to run")
-flags.DEFINE_integer("training_time", 300, "Number of Seconds to train for")
 flags.DEFINE_integer("step_mul", 8, "Game steps per agent step.")
+flags.DEFINE_integer('run_time', 300, 'Number of Seconds/Steps to train')
+flags.DEFINE_integer('threads', 8, 'Number of Parallel Agents')
 flags.DEFINE_enum("agent_race", None, sc2_env.races.keys(), "Agent's race.")
 flags.DEFINE_enum("bot_race", None, sc2_env.races.keys(), "Bot's race.")
 flags.DEFINE_enum("difficulty", None, sc2_env.difficulties.keys(),
                   "Bot's strength.")
-flags.DEFINE_bool("save_replay", True, "Whether to save a replay at the end.")
 flags.DEFINE_string("map", None, "Name of a map to use.")
-flags.DEFINE_bool("profile", False, "Whether to turn on code profiling.")
-flags.DEFINE_bool("trace", False, "Whether to trace the code execution.")
 flags.DEFINE_string('algorithm', 'test.Test', 'Which Algorithm to run')
-flags.DEFINE_bool("validate", False, 'Validation instead of training mode')
 
 flags.mark_flag_as_required("map")
 
@@ -73,9 +75,10 @@ def main(argv):
 
     algo_module, algo_name = FLAGS.algorithm.rsplit(".", 1)
     algo_cls = getattr(importlib.import_module(algo_module), algo_name)
-    algo = algo_cls(FLAGS.episodes, a_space, s_space)
+    algo = algo_cls(FLAGS.run_time, a_space, s_space)
     algo.run()
-
+    print('sys exit')
+    sys.exit()
 
 if __name__ == "__main__":
   app.run(main)

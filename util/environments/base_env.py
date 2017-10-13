@@ -41,7 +41,7 @@ class BaseEnv(gym.Env):
 
     @property
     def observation_space(self):
-        return spaces.Box(low=0, high=4, shape=self.get_state().shape)
+        return spaces.Box(low=0, high=255, shape=self.get_state().shape)
 
     def get_state(self):
         pass
