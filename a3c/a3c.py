@@ -69,9 +69,10 @@ class A3c:
         for e in self.envs:
             e.start()
 
-        for i in range(10):
-            time.sleep(FLAGS.run_time/10)
-            self.logger.info("Progress:" + str((i+1)*10) + "%")
+        for i in range(20):
+            time.sleep(FLAGS.run_time/20)
+            self.logger.info("Progress:" + str((i+1)*5) + "%")
+            shared.brain.model.save(FLAGS.save_model + ".checkpoint." + str(i))
         episodes = 0
         sps=0
         for e in self.envs:
@@ -120,7 +121,7 @@ class A3c:
 
         print("Training finished")
 
-        shared.brain.model.save(FLAGS.save_model)
+        shared.brain.model.save(FLAGS.save_model + ".final")
         # run_env = Environment(e_start=0., e_end=0., log_data=True)
         # run_env.start()
         # time.sleep(300)
