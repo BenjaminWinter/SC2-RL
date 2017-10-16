@@ -20,7 +20,8 @@ def load_scenarios():
         "Stalkers_Stalkers",
         "Hydras_Zealots",
         "CollectMineralShardsMod",
-	"MoveToBeaconMod"
+        "MoveToBeaconMod",
+        "FindZergling"
     ]
 
     for name in scenarios:

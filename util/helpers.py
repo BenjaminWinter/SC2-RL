@@ -116,7 +116,9 @@ def get_env_wrapper():
     if FLAGS.map == 'CollectMineralShardsMod' or FLAGS.map == 'MoveToBeaconMod':
         from util.environments.simple_collectminerals_env import SimpleCollectMineralEnv
         return SimpleCollectMineralEnv()
-
+    if FLAGS.map == "FindZergling":
+        from util.environments.simple_attack_env import SimpleAttackEnv
+        return SimpleAttackEnv()
 
 def get_shifted_position(direction, obs, dist):
     player_relative = obs.observation["screen"][_PLAYER_RELATIVE]
