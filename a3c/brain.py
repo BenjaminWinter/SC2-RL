@@ -41,6 +41,10 @@ class Brain:
         self.graph = self._build_graph(self.model)
 
         self.session.run(tf.global_variables_initializer())
+
+        if saved_model:
+            self.model.load_weights(saved_model)
+
         self.default_graph = tf.get_default_graph()
 
         self.default_graph.finalize()  # avoid modifications
