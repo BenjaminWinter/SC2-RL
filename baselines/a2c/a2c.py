@@ -168,24 +168,32 @@ def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_c
     num_procs = len(env.remotes) # HACK
     model = Model(policy=policy, ob_space=ob_space, ac_space=ac_space, nenvs=nenvs, nsteps=nsteps, nstack=nstack, num_procs=num_procs, ent_coef=ent_coef, vf_coef=vf_coef,
         max_grad_norm=max_grad_norm, lr=lr, alpha=alpha, epsilon=epsilon, total_timesteps=total_timesteps, lrschedule=lrschedule)
+
+    if FLAGS.load_model:
+        model.load(FLAGS.load_model)
+
+
     runner = Runner(env, model, nsteps=nsteps, nstack=nstack, gamma=gamma)
 
     nbatch = nenvs*nsteps
     tstart = time.time()
     for update in range(1, total_timesteps//nbatch+1):
         obs, states, rewards, masks, actions, values = runner.run()
-        policy_loss, value_loss, policy_entropy = model.train(obs, states, rewards, masks, actions, values)
-        nseconds = time.time()-tstart
-        fps = int((update*nbatch)/nseconds)
-        if update % log_interval == 0 or update == 1:
-            ev = explained_variance(values, rewards)
-            logger.record_tabular("nupdates", update)
-            logger.record_tabular("total_timesteps", update*nbatch)
-            logger.record_tabular("fps", fps)
-            logger.record_tabular("policy_entropy", float(policy_entropy))
-            logger.record_tabular("value_loss", float(value_loss))
-            logger.record_tabular("explained_variance", float(ev))
-            logger.dump_tabular()
+        if not FLAGS.validate:
+            policy_loss, value_loss, policy_entropy = model.train(obs, states, rewards, masks, actions, values)
+            nseconds = time.time()-tstart
+            fps = int((update*nbatch)/nseconds)
+            if update % log_interval == 0 or update == 1:
+                ev = explained_variance(values, rewards)
+                logger.record_tabular("nupdates", update)
+                logger.record_tabular("total_timesteps", update*nbatch)
+                logger.record_tabular("fps", fps)
+                logger.record_tabular("policy_entropy", float(policy_entropy))
+                logger.record_tabular("value_loss", float(value_loss))
+                logger.record_tabular("explained_variance", float(ev))
+                logger.dump_tabular()
+        else:
+            time.sleep(0.33)
 
     savepath = osp.join(logger.get_dir(), FLAGS.save_model)
     print('Saving to', savepath)
