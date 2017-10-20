@@ -34,7 +34,8 @@ class Acktr:
 
         set_global_seeds(seed)
         if FLAGS.validate:
-            env = helpers.get_env_wrapper(render=FLAGS.render)
+            from util.environments.sim_proc_env import SimProcEnv
+            env = SimProcEnv(render=True)
         else:
             env = SubprocVecEnv([make_env(i) for i in range(num_cpu)])
         policy_fn = CnnPolicy

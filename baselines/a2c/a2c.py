@@ -177,7 +177,7 @@ def learn(policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_c
 
     nbatch = nenvs*nsteps
     tstart = time.time()
-    for update in range(1, total_timesteps//nbatpch+1):
+    for update in range(1, total_timesteps//nbatch+1):
         obs, states, rewards, masks, actions, values = runner.run()
         if not FLAGS.validate:
             policy_loss, value_loss, policy_entropy = model.train(obs, states, rewards, masks, actions, values)
