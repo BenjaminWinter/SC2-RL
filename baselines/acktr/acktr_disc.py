@@ -175,6 +175,7 @@ def learn(policy, env, seed, total_timesteps=int(40e6), gamma=0.99, log_interval
     set_global_seeds(seed)
 
     nenvs = env.num_envs
+
     ob_space = env.observation_space
     ac_space = env.action_space
     make_model = lambda : Model(policy, ob_space, ac_space, nenvs, total_timesteps, nprocs=nprocs, nsteps
@@ -186,6 +187,8 @@ def learn(policy, env, seed, total_timesteps=int(40e6), gamma=0.99, log_interval
         with open(osp.join(logger.get_dir(), 'make_model.pkl'), 'wb') as fh:
             fh.write(cloudpickle.dumps(make_model))
     model = make_model()
+    if FLAGS.load_model:
+        model.load(FLAGS.load_model)
 
     runner = Runner(env, model, nsteps=nsteps, nstack=nstack, gamma=gamma)
     nbatch = nenvs*nsteps

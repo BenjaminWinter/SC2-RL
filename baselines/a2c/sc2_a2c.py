@@ -21,7 +21,7 @@ def train(num_frames, seed, policy, lrschedule, num_cpu):
 
     def make_env(rank):
         def _thunk():
-            env = helpers.get_env_wrapper()
+            env = helpers.get_env_wrapper(render=FLAGS.render)
             env.seed(seed + rank)
             env = bench.Monitor(env, logger.get_dir() and 
                 os.path.join(logger.get_dir(), "{}.monitor.json".format(rank)))
@@ -52,7 +52,7 @@ class A2c:
 
         def make_env(rank):
             def _thunk():
-                env = helpers.get_env_wrapper()
+                env = helpers.get_env_wrapper(render=FLAGS.render)
                 env.seed(seed + rank)
                 env = bench.Monitor(env, logger.get_dir() and
                                     os.path.join(logger.get_dir(), "{}.monitor.json".format(rank)))

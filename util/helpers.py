@@ -90,7 +90,7 @@ def get_retreat_coordinates(obs):
 
 
 def get_available_actions():
-    return ['ATTACK', 'RETREAT', '_NO_OP']
+    return ["ATTACK", "RETREAT", "_NO_OP"]
 
 
 def get_sc2_action(next_action, obs):
@@ -108,17 +108,23 @@ def get_sc2_action(next_action, obs):
     return actions.FunctionCall(next_action, args)
 
 
-def get_env_wrapper():
+def get_env_wrapper(render=False):
 
-    if FLAGS.map in ['Vulture_Firebats', 'Marine_Zerglings']:
+    if FLAGS.map in ["Vulture_Firebats", "Marine_Zerglings"]:
         from util.environments.simple_vulture_env import SimpleVultureEnv
-        return SimpleVultureEnv()
-    if FLAGS.map == 'CollectMineralShardsMod' or FLAGS.map == 'MoveToBeaconMod':
+        return SimpleVultureEnv(render)
+    elif FLAGS.map in ["CollectMineralShardsMod", "MoveToBeaconMod"]:
         from util.environments.simple_collectminerals_env import SimpleCollectMineralEnv
-        return SimpleCollectMineralEnv()
-    if FLAGS.map == "FindZergling":
+        return SimpleCollectMineralEnv(render)
+    elif FLAGS.map in ["FindUltralisk"]:
         from util.environments.simple_attack_env import SimpleAttackEnv
-        return SimpleAttackEnv()
+        return SimpleAttackEnv(render)
+    elif FLAGS.map in ["FindUltraliskWithCreep"]:
+        from util.environments.simple_attack_multilayer_env import SimpleAttackMultilayerEnv
+        return SimpleAttackMultilayerEnv(render)
+    else:
+        raise ValueError("No Wrapper for Map found")
+
 
 def get_shifted_position(direction, obs, dist):
     player_relative = obs.observation["screen"][_PLAYER_RELATIVE]

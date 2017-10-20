@@ -26,7 +26,7 @@ class Environment(threading.Thread):
         if sc2env is not None:
             self.env = sc2env
         else:
-            self.env = helpers.get_env_wrapper()
+            self.env = helpers.get_env_wrapper(render=FLAGS.render)
 
         self.agent = Agent(self.env.action_space.n, e_start or FLAGS.e_start, e_end or FLAGS.e_end, e_steps or FLAGS.e_steps)
 

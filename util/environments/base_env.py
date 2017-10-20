@@ -13,7 +13,7 @@ class BaseEnv(gym.Env):
     def __exit__(self, exc_type, exc_value, traceback):
         pass
 
-    def __init__(self):
+    def __init__(self, render):
         env = sc2_env.SC2Env(
                 FLAGS.map,
                 agent_race=FLAGS.agent_race,
@@ -23,7 +23,8 @@ class BaseEnv(gym.Env):
                 game_steps_per_episode=FLAGS.game_steps_per_episode,
                 screen_size_px=(FLAGS.screen_resolution, FLAGS.screen_resolution),
                 minimap_size_px=(FLAGS.minimap_resolution, FLAGS.minimap_resolution),
-                visualize=FLAGS.render)
+                visualize=render)
+        self.render = render
         self._env = env
         self._env_timestep = self._env.reset()
         self._actions = [0]
@@ -34,7 +35,7 @@ class BaseEnv(gym.Env):
 
     def _reset(self):
         self.resets += 1
-        if self.resets % 15000 == 0:
+        if self.resets % 8000 == 0:
             self._env = sc2_env.SC2Env(
                 FLAGS.map,
                 agent_race=FLAGS.agent_race,
@@ -44,7 +45,7 @@ class BaseEnv(gym.Env):
                 game_steps_per_episode=FLAGS.game_steps_per_episode,
                 screen_size_px=(FLAGS.screen_resolution, FLAGS.screen_resolution),
                 minimap_size_px=(FLAGS.minimap_resolution, FLAGS.minimap_resolution),
-                visualize=FLAGS.render)
+                visualize=self.render)
         self._env_timestep = self._env.reset()
         return self.get_state()
 

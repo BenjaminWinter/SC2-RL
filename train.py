@@ -69,10 +69,10 @@ def main(argv):
 
     maps.get(FLAGS.map)  # Assert the map exists.
 
-    with helpers.get_env_wrapper() as env:
+    with helpers.get_env_wrapper(render=False) as env:
         a_space = env.action_space.n
         s_space = env.observation_space.shape
-
+    print("first env destroyed")
     algo_module, algo_name = FLAGS.algorithm.rsplit(".", 1)
     algo_cls = getattr(importlib.import_module(algo_module), algo_name)
     algo = algo_cls(FLAGS.run_time, a_space, s_space)

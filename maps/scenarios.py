@@ -21,7 +21,8 @@ def load_scenarios():
         "Hydras_Zealots",
         "CollectMineralShardsMod",
         "MoveToBeaconMod",
-        "FindZergling"
+        "FindUltralisk",
+        "FindUltraliskWithCreep"
     ]
 
     for name in scenarios:

@@ -40,7 +40,7 @@ class A3c:
             self.opts = [Optimizer(thread_num=i) for i in range(FLAGS.optimizers)]
 
         none_state = np.zeros(s_space)
-        none_state = none_state.reshape((FLAGS.screen_resolution, FLAGS.screen_resolution, 1))
+        none_state = none_state.reshape(s_space)
         shared.brain = Brain(s_space, a_space, none_state, saved_model=FLAGS.load_model)
 
         self.runtime = run_time

@@ -23,7 +23,7 @@ class Acktr:
 
         def make_env(rank):
             def _thunk():
-                env = helpers.get_env_wrapper()
+                env = helpers.get_env_wrapper(render=FLAGS.render)
                 env.seed(seed + rank)
                 if logger.get_dir():
                     env = bench.Monitor(env, os.path.join(logger.get_dir(), "{}.monitor.json".format(rank)))
@@ -33,7 +33,10 @@ class Acktr:
             return _thunk
 
         set_global_seeds(seed)
-        env = SubprocVecEnv([make_env(i) for i in range(num_cpu)])
+        if FLAGS.validate:
+            env = helpers.get_env_wrapper(render=FLAGS.render)
+        else:
+            env = SubprocVecEnv([make_env(i) for i in range(num_cpu)])
         policy_fn = CnnPolicy
         learn(policy_fn, env, seed, total_timesteps=num_frames, nprocs=num_cpu)
         env.close()

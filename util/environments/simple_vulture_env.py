@@ -13,8 +13,8 @@ _NO_OP = actions.FUNCTIONS.no_op.id
 
 
 class SimpleVultureEnv(BaseEnv):
-    def __init__(self):
-        BaseEnv.__init__(self)
+    def __init__(self, render):
+        BaseEnv.__init__(self, render)
         self.logger = logging.getLogger('sc2rl.' + __name__)
         self.logger.info('starting ' + __name__ + ' environment')
         #

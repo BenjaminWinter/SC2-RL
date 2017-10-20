@@ -10,8 +10,8 @@ _PLAYER_RELATIVE = features.SCREEN_FEATURES.player_relative.index
 _MOVE_SCREEN = actions.FUNCTIONS.Move_screen.id
 _NOT_QUEUED = [False]
 class SimpleCollectMineralEnv(BaseEnv):
-    def __init__(self):
-        BaseEnv.__init__(self)
+    def __init__(self, render):
+        BaseEnv.__init__(self, render)
         self.logger = logging.getLogger('sc2rl.' + __name__)
         self.logger.info('starting ' + __name__ + ' environment')
         #
