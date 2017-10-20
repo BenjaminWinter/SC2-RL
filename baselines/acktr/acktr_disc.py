@@ -200,6 +200,7 @@ def learn(policy, env, seed, total_timesteps=int(40e6), gamma=0.99, log_interval
         model.old_obs = obs
         nseconds = time.time()-tstart
         fps = int((update*nbatch)/nseconds)
+        avg_reward = np.average(rewards)
         if update % log_interval == 0 or update == 1:
             ev = explained_variance(values, rewards)
             logger.record_tabular("nupdates", update)
@@ -209,6 +210,7 @@ def learn(policy, env, seed, total_timesteps=int(40e6), gamma=0.99, log_interval
             logger.record_tabular("policy_loss", float(policy_loss))
             logger.record_tabular("value_loss", float(value_loss))
             logger.record_tabular("explained_variance", float(ev))
+            logger.record_tabular("avg reward", float(avg_reward))
             logger.dump_tabular()
 
     savepath = osp.join(logger.get_dir(), FLAGS.save_model)
