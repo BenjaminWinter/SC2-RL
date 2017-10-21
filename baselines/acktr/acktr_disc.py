@@ -84,7 +84,7 @@ class Model(object):
 
         def save(save_path):
             ps = sess.run(params)
-            joblib.dump(ps, save_path + "/model")
+            joblib.dump(ps, save_path)
 
         def load(load_path):
             loaded_params = joblib.load(load_path)
@@ -201,6 +201,10 @@ def learn(policy, env, seed, total_timesteps=int(40e6), gamma=0.99, log_interval
         nseconds = time.time()-tstart
         fps = int((update*nbatch)/nseconds)
         avg_reward = np.average(rewards)
+        if update % 50 == 0:
+            savepath = osp.join(logger.get_dir(), FLAGS.save_model, "checkpoint." + str(update))
+            print('Saving to', savepath)
+            model.save(savepath)
         if update % log_interval == 0 or update == 1:
             ev = explained_variance(values, rewards)
             logger.record_tabular("nupdates", update)
@@ -213,7 +217,7 @@ def learn(policy, env, seed, total_timesteps=int(40e6), gamma=0.99, log_interval
             logger.record_tabular("avg reward", float(avg_reward))
             logger.dump_tabular()
 
-    savepath = osp.join(logger.get_dir(), FLAGS.save_model)
+    savepath = osp.join(logger.get_dir(), FLAGS.save_model, "final")
     print('Saving to', savepath)
     model.save(savepath)
 
