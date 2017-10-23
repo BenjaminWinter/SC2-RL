@@ -24,7 +24,7 @@ class BaseEnv(gym.Env):
                 screen_size_px=(FLAGS.screen_resolution, FLAGS.screen_resolution),
                 minimap_size_px=(FLAGS.minimap_resolution, FLAGS.minimap_resolution),
                 visualize=render)
-        self.render = render
+        self.do_render = render
         self._env = env
         self._env_timestep = self._env.reset()
         self._actions = [0]
@@ -45,7 +45,7 @@ class BaseEnv(gym.Env):
                 game_steps_per_episode=FLAGS.game_steps_per_episode,
                 screen_size_px=(FLAGS.screen_resolution, FLAGS.screen_resolution),
                 minimap_size_px=(FLAGS.minimap_resolution, FLAGS.minimap_resolution),
-                visualize=self.render)
+                visualize=self.do_render)
         self._env_timestep = self._env.reset()
         return self.get_state()
 
@@ -73,3 +73,6 @@ class BaseEnv(gym.Env):
                 visualize=FLAGS.render)
         self._env_timestep = self._env.reset()
         return self.get_state()
+
+    def render(self):
+        pass
