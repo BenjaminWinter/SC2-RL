@@ -43,7 +43,7 @@ class Acktr:
         else:
             env = SubprocVecEnv([make_env(i) for i in range(num_cpu)])
         policy_fn = CnnPolicy
-        self.learn_disc(policy_fn, env, seed, total_timesteps=num_frames, nprocs=num_cpu)
+        self.learn_disc(policy_fn, env, seed, total_timesteps=num_frames, nprocs=num_cpu, nsteps=(1 if FLAGS.render else 20))
         env.close()
 
     def learn_disc(self, policy, env, seed, total_timesteps=int(40e6), gamma=0.99, log_interval=1, nprocs=32, nsteps=20,
@@ -78,6 +78,8 @@ class Acktr:
                 policy_loss, value_loss, policy_entropy = model.train(obs, states, rewards, masks, actions, values)
             else:
                 policy_loss, value_loss, policy_entropy = [0,0,0]
+            if FLAGS.render:
+                time.sleep(0.33)
 
             model.old_obs = obs
             nseconds = time.time() - tstart

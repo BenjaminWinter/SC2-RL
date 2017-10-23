@@ -48,7 +48,7 @@ class A2c:
             policy_fn = LstmPolicy
         elif policy == 'lnlstm':
             policy_fn = LnLstmPolicy
-        self.learn(policy_fn, env, seed, total_timesteps=num_frames, lrschedule=lrschedule)
+        self.learn(policy_fn, env, seed, total_timesteps=num_frames, lrschedule=lrschedule, nsteps=(1 if FLAGS.render else 5))
         env.close()
 
     def learn(self, policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_coef=0.5, ent_coef=0.01,
@@ -78,6 +78,8 @@ class A2c:
                 policy_loss, value_loss, policy_entropy = model.train(obs, states, rewards, masks, actions, values)
             else:
                 policy_loss, value_loss, policy_entropy = [0, 0, 0]
+            if FLAGS.render:
+                time.sleep(0.33)
             nseconds = time.time() - tstart
             fps = int((update * nbatch) / nseconds)
 
