@@ -110,6 +110,8 @@ class Brain:
                 return  # we can't yield inside lock
 
             s, a, r, s_, s_mask = self.train_queue
+
+            self.logger.info("Avg Reward: " + str(sum(r)/len(r)))
             self.train_queue = [[], [], [], [], []]
 
             s = np.stack(s)

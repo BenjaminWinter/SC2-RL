@@ -20,7 +20,6 @@ import logging
 import util.helpers as helpers
 
 import a3c.a3c
-import baselines.a2c.sc2_a2c
 import maps.scenarios as scenarios
 import sys
 

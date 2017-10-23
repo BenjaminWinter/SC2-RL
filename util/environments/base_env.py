@@ -74,5 +74,5 @@ class BaseEnv(gym.Env):
         self._env_timestep = self._env.reset()
         return self.get_state()
 
-    def render(self):
+    def render(self, close=True):
         pass
