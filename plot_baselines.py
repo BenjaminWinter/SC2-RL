@@ -16,17 +16,19 @@ def main():
         with open(fname) as file:
             line = file.readline()
             temp = []
+            i = 0
             while line:
+                i += 1
                 obj = json.loads(line)
-                if 'r' in obj:
+                if 'r' in obj and i < 139300:
                     temp.append(obj['r'])
                 line = file.readline()
+            print(temp)
             rewards.append(temp)
             ax = fig.add_subplot(2,cols,fnum+1)
             print(fnum+1)
             plt.plot(temp, label="Plot" + str(fnum))
         fnum += 1
-    print(rewards)
     rewards = np.array(rewards)
     max = np.amax(rewards, 0)
     mean = np.mean(rewards, 0)

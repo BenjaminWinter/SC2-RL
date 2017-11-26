@@ -43,14 +43,14 @@ class Environment(threading.Thread):
             step += 1
             time.sleep(FLAGS.thread_delay)  # yield
 
-            a = self.agent.act(s)
-            s_, r, done, info = self.env.step(a)
+            a, x, y = self.agent.act(s)
+            s_, r, done, info = self.env.step([a, x, y])
 
             if done:  # terminal state
                 s_ = None
 
             if (not FLAGS.validate) or self.e_start > 0:
-                self.agent.train(s, a, r, s_)
+                self.agent.train(s, a,x, y, r, s_)
 
             s = s_
             R += r
