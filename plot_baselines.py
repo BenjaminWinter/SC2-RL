@@ -26,8 +26,10 @@ def main():
             print(fnum+1)
             plt.plot(temp, label="Plot" + str(fnum))
         fnum += 1
-    print(rewards)
-    rewards = np.array(rewards)
+    minsize = min([len(x) for x in rewards])
+    print(minsize)
+    rewards = np.array([x[:minsize] for x in rewards])
+
     max = np.amax(rewards, 0)
     mean = np.mean(rewards, 0)
     fig.add_subplot(2, cols, fnum+1)
