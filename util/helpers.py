@@ -110,7 +110,7 @@ def get_sc2_action(next_action, obs):
 
 
 def get_env_wrapper(render=False):
-    if "args" in FLAGS.algorithm:
+    if "args" in FLAGS.algorithm or FLAGS.action_args:
         if FLAGS.map in ["FindUltralisk", "FindUltraliskWithCreep"]:
             from util.environments.attack_env import AttackEnv
             return AttackEnv(render)
