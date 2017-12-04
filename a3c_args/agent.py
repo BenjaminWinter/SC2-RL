@@ -29,47 +29,55 @@ class Agent:
         self.frames = self.frames + 1
 
         if random.random() < eps:
-            return random.randint(0, self.action_space - 1)
+            return random.randint(0, self.action_space - 1), random.randint(0, FLAGS.screen_resolution -1), random.randint(0, FLAGS.screen_resolution -1)
 
         else:
             s = np.array([s])
-            p = shared.brain.predict_p(s)[0]
-
+            p, xp, yp = shared.brain.predict_p(s)
+            p = p[0]
+            xp = xp[0]
+            yp = yp[0]
             # a = np.argmax(p)
             a = np.random.choice(self.action_space, p=p)
+            x = np.random.choice(FLAGS.screen_resolution, p=xp)
+            y = np.random.choice(FLAGS.screen_resolution, p=yp)
 
-            return a
+            return a, x, y
 
-    def train(self, s, a, r, s_):
+    def train(self, s, a, x, y, r, s_):
         def get_sample(memory, n):
-            s, a, _, _ = memory[0]
-            _, _, _, s_ = memory[n - 1]
+            s, a, x, y, _, _ = memory[0]
+            _, _, _, _, _, s_ = memory[n - 1]
 
-            return s, a, self.R, s_
+            return s, a, x, y, self.R, s_
 
         a_cats = np.zeros(self.action_space)  # turn action into one-hot representation
         a_cats[a] = 1
+        x_cats = np.zeros(FLAGS.screen_resolution)  # turn action into one-hot representation
+        x_cats[x] = 1
+        y_cats = np.zeros(FLAGS.screen_resolution)  # turn action into one-hot representation
+        y_cats[y] = 1
 
-        self.memory.append((s, a_cats, r, s_))
+        self.memory.append((s, a_cats, x_cats, y_cats, r, s_))
 
         self.R = (self.R + r * shared.gamma_n) / FLAGS.gamma
 
         if s_ is None:
             while len(self.memory) > 0:
                 n = len(self.memory)
-                s, a, r, s_ = get_sample(self.memory, n)
-                shared.brain.train_push(s, a, r, s_)
+                s, a, x, y, r, s_ = get_sample(self.memory, n)
+                shared.brain.train_push(s, a, x, y, r, s_)
 
-                self.R = (self.R - self.memory[0][2]) / FLAGS.gamma
+                self.R = (self.R - self.memory[0][4]) / FLAGS.gamma
                 self.memory.pop(0)
 
             self.R = 0
 
         if len(self.memory) >= FLAGS.n_step_return:
-            s, a, r, s_ = get_sample(self.memory, FLAGS.n_step_return)
-            shared.brain.train_push(s, a, r, s_)
+            s, a, x, y, r, s_ = get_sample(self.memory, FLAGS.n_step_return)
+            shared.brain.train_push(s, a, x, y, r, s_)
 
-            self.R = self.R - self.memory[0][2]
+            self.R = self.R - self.memory[0][4]
             self.memory.pop(0)
 
             # possible edge case - if an episode ends in <N steps, the computation is incorrect
