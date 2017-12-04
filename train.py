@@ -44,7 +44,8 @@ flags.DEFINE_enum("difficulty", None, sc2_env.difficulties.keys(),
                   "Bot's strength.")
 flags.DEFINE_string("map", None, "Name of a map to use.")
 flags.DEFINE_string('algorithm', 'test.Test', 'Which Algorithm to run')
-
+flags.DEFINE_string('load_model', None, 'Keras model to load')
+flags.DEFINE_string('save_model', 'models/training_model', 'Where to save Keras model')
 flags.mark_flag_as_required("map")
 
 

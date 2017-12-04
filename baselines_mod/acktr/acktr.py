@@ -13,8 +13,6 @@ import numpy as np
 FLAGS = flags.FLAGS
 
 flags.DEFINE_integer('seed', 0, 'RNG Seed')
-flags.DEFINE_string('load_model', None, 'Keras model to load')
-flags.DEFINE_string('save_model', 'models/training_model', 'Where to save Keras model')
 
 if FLAGS.action_args:
     from baselines_mod.acktr.acktr_disc import Runner, Model
