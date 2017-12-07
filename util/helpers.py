@@ -111,8 +111,11 @@ def get_sc2_action(next_action, obs):
 
 def get_env_wrapper(render=False):
     if "args" in FLAGS.algorithm or FLAGS.action_args:
-        if FLAGS.map in ["FindUltralisk", "FindUltraliskWithCreep"]:
+        if FLAGS.map == "FindUltralisk":
             from util.environments.attack_env import AttackEnv
+            return AttackEnv(render)
+        if FLAGS.map == "FindUltraliskWithCreep":
+            from util.environments.attack_creep_env import AttackEnv
             return AttackEnv(render)
         else:
             raise ValueError("No Wrapper for Map found")
