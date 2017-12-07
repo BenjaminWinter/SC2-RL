@@ -7,6 +7,7 @@ from pysc2.lib import actions
 
 FLAGS = flags.FLAGS
 
+
 _PLAYER_RELATIVE = features.SCREEN_FEATURES.player_relative.index
 _VISIBILITY = features.SCREEN_FEATURES.visibility_map.index
 _PLAYER_FRIENDLY = 1
@@ -109,6 +110,12 @@ def get_sc2_action(next_action, obs):
 
 
 def get_env_wrapper(render=False):
+    if "args" in FLAGS.algorithm or FLAGS.action_args:
+        if FLAGS.map in ["FindUltralisk", "FindUltraliskWithCreep"]:
+            from util.environments.attack_env import AttackEnv
+            return AttackEnv(render)
+        else:
+            raise ValueError("No Wrapper for Map found")
 
     if FLAGS.map in ["Vulture_Firebats", "Marine_Zerglings"]:
         from util.environments.simple_vulture_env import SimpleVultureEnv

@@ -4,9 +4,7 @@ import os.path as osp
 from baselines import logger
 from baselines.common import set_global_seeds, explained_variance
 from baselines import bench
-from baselines.acktr.acktr_disc import Runner, Model
 from baselines.common.vec_env.subproc_vec_env import SubprocVecEnv
-from baselines_mod.acktr.policies import CnnPolicy
 import gflags as flags
 import util.helpers as helpers
 import tensorflow as tf
@@ -15,6 +13,13 @@ import numpy as np
 FLAGS = flags.FLAGS
 
 flags.DEFINE_integer('seed', 0, 'RNG Seed')
+
+if FLAGS.action_args:
+    from baselines_mod.acktr.acktr_disc import Runner, Model
+    from baselines_mod.acktr.policies_coords import CnnPolicy
+else:
+    from baselines.acktr.acktr_disc import Runner, Model
+    from baselines_mod.acktr.policies import CnnPolicy
 
 class Acktr:
     def __init__(self, run_time, a_space, s_space):
@@ -73,9 +78,16 @@ class Acktr:
         tstart = time.time()
         enqueue_threads = model.q_runner.create_threads(model.sess, coord=tf.train.Coordinator(), start=True)
         for update in range(1, total_timesteps // nbatch + 1):
-            obs, states, rewards, masks, actions, values = runner.run()
+            if FLAGS.action_args:
+                obs, states, rewards, masks, actions, actionxs, actionys, values = runner.run()
+            else:
+                obs, states, rewards, masks, actions, values = runner.run()
+
             if not FLAGS.validate:
-                policy_loss, value_loss, policy_entropy = model.train(obs, states, rewards, masks, actions, values)
+                if FLAGS.action_args:
+                    policy_loss, value_loss, policy_entropy = model.train(obs, states, rewards, masks, actions, actionxs, actionys, values)
+                else:
+                    policy_loss, value_loss, policy_entropy = model.train(obs, states, rewards, masks, actions, values)
             else:
                 policy_loss, value_loss, policy_entropy = [0,0,0]
             if FLAGS.render:

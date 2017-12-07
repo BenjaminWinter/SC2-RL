@@ -19,7 +19,6 @@ import logging
 
 import util.helpers as helpers
 
-import a3c.a3c
 import maps.scenarios as scenarios
 import sys
 
@@ -29,6 +28,8 @@ flags.DEFINE_bool("render", False, "Whether to render with pygame.")
 flags.DEFINE_bool("profile", False, "Whether to turn on code profiling.")
 flags.DEFINE_bool("trace", False, "Whether to trace the code execution.")
 flags.DEFINE_bool("validate", False, 'Validation instead of training mode')
+flags.DEFINE_bool("action_args", False, 'wether simple environment or envs'
+                                        ' with arguments should be used')
 flags.DEFINE_integer("screen_resolution", 84,
                      "Resolution for screen feature layers.")
 flags.DEFINE_integer("minimap_resolution", 64,
@@ -43,7 +44,8 @@ flags.DEFINE_enum("difficulty", None, sc2_env.difficulties.keys(),
                   "Bot's strength.")
 flags.DEFINE_string("map", None, "Name of a map to use.")
 flags.DEFINE_string('algorithm', 'test.Test', 'Which Algorithm to run')
-
+flags.DEFINE_string('load_model', None, 'Keras model to load')
+flags.DEFINE_string('save_model', 'models/training_model', 'Where to save Keras model')
 flags.mark_flag_as_required("map")
 
 
