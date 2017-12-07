@@ -31,7 +31,11 @@ class BaseEnv(gym.Env):
         self.resets = 0
 
     def _step(self, action):
-        pass
+        self._env_timestep = self._env.step([self.get_sc2_action(action)])
+        r = self._env_timestep[0].reward
+        s_ = self.get_state()
+
+        return s_, r, self._env_timestep[0].last(), {}
 
     def _reset(self):
         self.resets += 1
@@ -75,4 +79,7 @@ class BaseEnv(gym.Env):
         return self.get_state()
 
     def render(self, close=True):
+        pass
+
+    def get_sc2_action(self):
         pass

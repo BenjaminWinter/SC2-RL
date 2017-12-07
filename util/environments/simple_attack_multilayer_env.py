@@ -28,13 +28,6 @@ class SimpleAttackMultilayerEnv(BaseEnv):
         #
         self._actions = [_ATTACK_SCREEN, _ATTACK_SCREEN, _ATTACK_SCREEN, _ATTACK_SCREEN]
 
-    def _step(self, action):
-        self._env_timestep = self._env.step([self.get_sc2_action(action)])
-        r = self._env_timestep[0].reward
-        s_ = self.get_state()
-
-        return s_, r, self._env_timestep[0].last(), {}
-
     def get_state(self):
         layer1 = self._env_timestep[0].observation['screen'][_PLAYER_RELATIVE] * 255 / 4
         layer1 = layer1.reshape(layer1.shape + (1, ))

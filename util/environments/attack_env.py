@@ -28,13 +28,6 @@ class AttackEnv(BaseEnv):
         #
         self._actions = [_ATTACK_SCREEN, _NO_OP, _SELECT_ARMY]
 
-    def _step(self, action):
-        self._env_timestep = self._env.step([self.get_sc2_action(action)])
-        r = self._env_timestep[0].reward
-        s_ = self.get_state()
-
-        return s_, r, self._env_timestep[0].last(), {}
-
     def get_state(self):
         state = self._env_timestep[0].observation['screen'][_PLAYER_RELATIVE] * 255 / 4
         return state.reshape(state.shape + (1, ))
