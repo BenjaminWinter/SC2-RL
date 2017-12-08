@@ -1,6 +1,7 @@
 import math
 import numpy as np
 import gflags as flags
+import importlib as ilib
 
 from pysc2.lib import features
 from pysc2.lib import actions
@@ -110,9 +111,12 @@ def get_sc2_action(next_action, obs):
     return actions.FunctionCall(next_action, args)
 
 
-def env_wrapper(render=False):
-    _module = __import__('util.environments.' + toSnake(FLAGS.map))
+def get_env_wrapper(render=False):
+    cname = toSnake(FLAGS.map)
+    _module = ilib.import_module('util.environments.' + cname)
     _class = getattr(_module, FLAGS.map)
+    print(_module)
+    print(_class)
     return _class(render)
 
 

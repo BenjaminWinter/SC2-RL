@@ -19,8 +19,6 @@ flags.DEFINE_float('e_steps', 80000, 'Number of steps over which to decay Epsilo
 flags.DEFINE_float('gamma', 0.99, 'Discount Value Gamma')
 flags.DEFINE_integer('n_step_return', 8, 'N Step Return Value')
 flags.DEFINE_integer('optimizers', 1, 'Number of Optimizer Threads')
-flags.DEFINE_string('load_model', None, 'Keras model to load')
-flags.DEFINE_string('save_model', 'models/training_model', 'Where to save Keras model')
 
 
 

@@ -62,7 +62,7 @@ class BaseEnv(gym.Env):
         return spaces.Box(low=0, high=255, shape=self.get_state().shape)
 
     def get_state(self):
-        return helpers.get_input_layers(self._input_layers)
+        return helpers.get_input_layers(self._input_layers, self._env_timestep[0])
 
     def rebuild(self):
         self._env = sc2_env.SC2Env(

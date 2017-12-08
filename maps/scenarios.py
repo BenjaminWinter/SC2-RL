@@ -22,7 +22,10 @@ def load_scenarios():
         "CollectMineralShardsMod",
         "MoveToBeaconMod",
         "FindUltralisk",
-        "FindUltraliskWithCreep"
+        "FindUltraliskWithCreep",
+        "ReaperZerglings",
+        "GatewayZerg",
+        "StalkersRoaches"
     ]
 
     for name in scenarios:
