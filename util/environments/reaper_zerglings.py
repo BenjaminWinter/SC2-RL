@@ -17,7 +17,7 @@ _SELECT_ARMY = actions.FUNCTIONS.select_army.id
 _NOT_QUEUED = [0]
 
 
-class AttackEnv(BaseEnv):
+class ReaperZerglings(BaseEnv):
     def __init__(self, render):
         BaseEnv.__init__(self, render)
         self.logger = logging.getLogger('sc2rl.' + __name__)
@@ -30,17 +30,24 @@ class AttackEnv(BaseEnv):
         #  DOWN
         #  SELECT ARMY
         #
-        self._actions = [_ATTACK_SCREEN, _MOVE_SCREEN, _NO_OP, _SELECT_ARMY]
+        if FLAGS.action_args:
+            self._actions = [_ATTACK_SCREEN, _MOVE_SCREEN, _NO_OP, _SELECT_ARMY]
+        else:
+            self._actions = [_ATTACK_SCREEN, _ATTACK_SCREEN, _ATTACK_SCREEN, _ATTACK_SCREEN, _MOVE_SCREEN, _MOVE_SCREEN, _MOVE_SCREEN, _MOVE_SCREEN]
         self._input_layers = [_PLAYER_RELATIVE, _HEIGHT_MAP]
 
     def get_sc2_action(self, action):
-        a, x, y = action
-        if self._actions[a] in [_ATTACK_SCREEN, _MOVE_SCREEN]:
-            args = [_NOT_QUEUED, [x, y]]
-        elif self._actions[a] == _NO_OP:
-            args = []
-        elif self._actions[a] == _SELECT_ARMY:
-            args = [_NOT_QUEUED]
+        if FLAGS.action_args:
+            a, x, y = action
+            if self._actions[a] in [_ATTACK_SCREEN, _MOVE_SCREEN]:
+                args = [_NOT_QUEUED, [x, y]]
+            elif self._actions[a] == _NO_OP:
+                args = []
+            elif self._actions[a] == _SELECT_ARMY:
+                args = [_NOT_QUEUED]
+            else:
+                raise ValueError("Cant find action")
+            return actions.FunctionCall(self._actions[a], args)
         else:
-            raise ValueError("Cant find action")
-        return actions.FunctionCall(self._actions[a], args)
+            args = [_NOT_QUEUED, helpers.get_shifted_position(action % 4, self._env_timestep[0], 15)]
+            return actions.FunctionCall(self._actions[action], args)

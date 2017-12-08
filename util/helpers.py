@@ -1,6 +1,7 @@
 import math
 import numpy as np
 from absl import flags
+import importlib as ilib
 
 from pysc2.lib import features
 from pysc2.lib import actions
