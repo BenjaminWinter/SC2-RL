@@ -1,6 +1,6 @@
 from util.environments.base_env import BaseEnv
 from pysc2.lib import actions, features
-import gflags as flags
+from absl import flags
 import logging
 import numpy as np
 import util.helpers as helpers

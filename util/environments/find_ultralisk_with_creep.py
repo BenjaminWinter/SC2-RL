@@ -1,6 +1,6 @@
 from util.environments.find_ultralisk import FindUltralisk
 from pysc2.lib import actions, features
-import gflags as flags
+from absl import flags
 import logging
 
 FLAGS = flags.FLAGS

@@ -1,6 +1,6 @@
 from util.environments.base_env import BaseEnv
 from pysc2.lib import actions, features
-import gflags as flags
+from absl import flags
 import logging
 import numpy as np
 import util.helpers as helpers
@@ -36,7 +36,7 @@ class FindUltralisk(BaseEnv):
         self._input_layers = [_PLAYER_RELATIVE]
 
     def get_sc2_action(self, action):
-        if FLAGS.actions_args:
+        if FLAGS.action_args:
             a, x, y = action
             if self._actions[a] == _ATTACK_SCREEN:
                 args = [_NOT_QUEUED, [x, y]]

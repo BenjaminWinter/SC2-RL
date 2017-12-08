@@ -1,5 +1,5 @@
 from pysc2.env import sc2_env
-import gflags as flags
+from absl import flags
 import gym
 import gym.spaces as spaces
 import util.helpers as helpers
@@ -14,7 +14,7 @@ class BaseEnv(gym.Env):
 
     def __init__(self, render):
         env = sc2_env.SC2Env(
-                FLAGS.map,
+                map_name=FLAGS.map,
                 agent_race=FLAGS.agent_race,
                 bot_race=FLAGS.bot_race,
                 difficulty=FLAGS.difficulty,
@@ -41,7 +41,7 @@ class BaseEnv(gym.Env):
         self.resets += 1
         if self.resets % 8000 == 0:
             self._env = sc2_env.SC2Env(
-                FLAGS.map,
+                map_name=FLAGS.map,
                 agent_race=FLAGS.agent_race,
                 bot_race=FLAGS.bot_race,
                 difficulty=FLAGS.difficulty,
