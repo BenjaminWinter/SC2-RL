@@ -20,7 +20,7 @@ _SELECT_ARMY = actions.FUNCTIONS.select_army.id
 _NOT_QUEUED = [0]
 
 
-class AttackEnv(BaseEnv):
+class GatewayZerg(BaseEnv):
     def __init__(self, render):
         BaseEnv.__init__(self, render)
         self.logger = logging.getLogger('sc2rl.' + __name__)
@@ -34,16 +34,7 @@ class AttackEnv(BaseEnv):
         #  SELECT ARMY
         #
         self._actions = [_ATTACK_SCREEN, _FORCE_FIELD_SCREEN, _GUARDIAN_SHIELD, _NO_OP, _SELECT_ARMY]
-
-    def get_state(self):
-        layer1 = self._env_timestep[0].observation['screen'][_PLAYER_RELATIVE] * 255 / 4
-        layer1 = layer1.reshape(layer1.shape + (1,))
-        layer2 = self._env_timestep[0].observation['screen'][_HIT_POINTS]
-        layer2 = layer2.reshape(layer2.shape + (1,))
-        layer3 = self._env_timestep[0].observation['screen'][_UNIT_TYPE] * 255
-        layer3 = layer3.reshape(layer3.shape + (1,))
-
-        return np.concatenate((layer1, layer2, layer3), 2)
+        self._input_layers = [_PLAYER_RELATIVE, _HIT_POINTS, _UNIT_TYPE]
 
     def get_sc2_action(self, action):
         a, x, y = action

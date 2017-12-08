@@ -4,6 +4,7 @@ import gflags as flags
 
 from pysc2.lib import features
 from pysc2.lib import actions
+import re
 
 FLAGS = flags.FLAGS
 
@@ -109,31 +110,47 @@ def get_sc2_action(next_action, obs):
     return actions.FunctionCall(next_action, args)
 
 
-def get_env_wrapper(render=False):
-    if "args" in FLAGS.algorithm or FLAGS.action_args:
-        if FLAGS.map == "FindUltralisk":
-            from util.environments.attack_env import AttackEnv
-            return AttackEnv(render)
-        if FLAGS.map == "FindUltraliskWithCreep":
-            from util.environments.attack_creep_env import AttackEnv
-            return AttackEnv(render)
-        else:
-            raise ValueError("No Wrapper for Map found")
+def env_wrapper(render=False):
+    _module = __import__('util.environments.' + toSnake(FLAGS.map))
+    _class = getattr(_module, FLAGS.map)
+    return _class(render)
 
-    if FLAGS.map in ["Vulture_Firebats", "Marine_Zerglings"]:
-        from util.environments.simple_vulture_env import SimpleVultureEnv
-        return SimpleVultureEnv(render)
-    elif FLAGS.map in ["CollectMineralShardsMod", "MoveToBeaconMod"]:
-        from util.environments.simple_collectminerals_env import SimpleCollectMineralEnv
-        return SimpleCollectMineralEnv(render)
-    elif FLAGS.map in ["FindUltralisk"]:
-        from util.environments.simple_attack_env import SimpleAttackEnv
-        return SimpleAttackEnv(render)
-    elif FLAGS.map in ["FindUltraliskWithCreep"]:
-        from util.environments.simple_attack_multilayer_env import SimpleAttackMultilayerEnv
-        return SimpleAttackMultilayerEnv(render)
-    else:
-        raise ValueError("No Wrapper for Map found")
+
+# def get_env_wrapper(render=False):
+#     if "args" in FLAGS.algorithm or FLAGS.action_args:
+#         if FLAGS.map == "FindUltralisk":
+#             from util.environments.attack_env import AttackEnv
+#             return AttackEnv(render)
+#         if FLAGS.map == "FindUltraliskWithCreep":
+#             from util.environments.attack_creep_env import AttackEnv
+#             return AttackEnv(render)
+#         else:
+#             raise ValueError("No Wrapper for Map found")
+#
+#     if FLAGS.map in ["Vulture_Firebats", "Marine_Zerglings"]:
+#         from util.environments.simple_vulture_env import SimpleVultureEnv
+#         return SimpleVultureEnv(render)
+#     elif FLAGS.map in ["CollectMineralShardsMod", "MoveToBeaconMod"]:
+#         from util.environments.simple_collectminerals_env import SimpleCollectMineralEnv
+#         return SimpleCollectMineralEnv(render)
+#     elif FLAGS.map in ["FindUltralisk"]:
+#         from util.environments.simple_attack_env import SimpleAttackEnv
+#         return SimpleAttackEnv(render)
+#     elif FLAGS.map in ["FindUltraliskWithCreep"]:
+#         from util.environments.simple_attack_multilayer_env import SimpleAttackMultilayerEnv
+#         return SimpleAttackMultilayerEnv(render)
+#     else:
+#         raise ValueError("No Wrapper for Map found")
+
+def get_input_layers(ids, obs):
+    layers = []
+    for id in ids:
+        temp = obs.observation['screen'][id]
+        layers.append(temp.reshape(temp.shape + (1, )))
+
+    if len(ids) < 2:
+        return layers[0]
+    return np.concatenate(tuple(layers), 2)
 
 
 def get_shifted_position(direction, obs, dist):
@@ -152,3 +169,11 @@ def get_shifted_position(direction, obs, dist):
     elif direction == 3:
         player[0] += dist
     return[min(max(0, player[1]), 84 - 1), min(max(0, player[0]), 84 - 1)]
+
+_underscorer1 = re.compile(r'(.)([A-Z][a-z]+)')
+_underscorer2 = re.compile('([a-z0-9])([A-Z])')
+
+
+def toSnake(s):
+    subbed = _underscorer1.sub(r'\1_\2', s)
+    return _underscorer2.sub(r'\1_\2', subbed).lower()

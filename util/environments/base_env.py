@@ -2,9 +2,8 @@ from pysc2.env import sc2_env
 import gflags as flags
 import gym
 import gym.spaces as spaces
-
+import util.helpers as helpers
 FLAGS = flags.FLAGS
-
 
 class BaseEnv(gym.Env):
     def __enter__(self):
@@ -28,6 +27,7 @@ class BaseEnv(gym.Env):
         self._env = env
         self._env_timestep = self._env.reset()
         self._actions = [0]
+        self._input_layers = [0]
         self.resets = 0
 
     def _step(self, action):
@@ -62,7 +62,7 @@ class BaseEnv(gym.Env):
         return spaces.Box(low=0, high=255, shape=self.get_state().shape)
 
     def get_state(self):
-        pass
+        return helpers.get_input_layers(self._input_layers)
 
     def rebuild(self):
         self._env = sc2_env.SC2Env(
@@ -81,5 +81,5 @@ class BaseEnv(gym.Env):
     def render(self, close=True):
         pass
 
-    def get_sc2_action(self):
+    def get_sc2_action(self, action):
         pass
