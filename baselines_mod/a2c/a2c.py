@@ -8,7 +8,7 @@ from baselines.a2c.a2c import Runner, Model
 from baselines.common.vec_env.subproc_vec_env import SubprocVecEnv
 
 from baselines_mod.a2c.policies import CnnPolicy, LstmPolicy, LnLstmPolicy
-import gflags as flags
+from absl import flags
 import util.helpers as helpers
 import tensorflow as tf
 

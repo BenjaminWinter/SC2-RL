@@ -5,7 +5,7 @@ from baselines import logger
 from baselines.common import set_global_seeds, explained_variance
 from baselines import bench
 from baselines.common.vec_env.subproc_vec_env import SubprocVecEnv
-import gflags as flags
+from absl import flags
 import util.helpers as helpers
 import tensorflow as tf
 import numpy as np

@@ -13,8 +13,8 @@ import os
 from pysc2 import maps
 from pysc2.env import sc2_env
 
-from pysc2.lib import app
-import gflags as flags
+from absl import app
+from absl import flags
 import logging
 
 import util.helpers as helpers

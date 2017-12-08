@@ -1,6 +1,6 @@
 import math
 import numpy as np
-import gflags as flags
+from absl import flags
 
 from pysc2.lib import features
 from pysc2.lib import actions

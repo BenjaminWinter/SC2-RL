@@ -1,5 +1,5 @@
 import threading
-import gflags as flags
+from absl import flags
 import time
 import logging
 from .agent import Agent

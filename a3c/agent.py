@@ -1,6 +1,6 @@
 import random
 import numpy as np
-import gflags as flags
+from absl import flags
 import a3c.shared as shared
 
 FLAGS = flags.FLAGS

@@ -1,5 +1,5 @@
 import time
-import gflags as flags
+from absl import flags
 import numpy as np
 import logging
 import matplotlib as mpl

@@ -8,7 +8,7 @@ from keras.models import *
 from keras import backend as K
 
 import a3c.shared as shared
-import gflags as flags
+from absl import flags
 
 FLAGS = flags.FLAGS
 
