@@ -2,8 +2,11 @@ import numpy as np
 import tensorflow as tf
 from baselines.acktr.utils import conv, fc, dense, conv_to_fc, sample, kl_div
 from baselines.common.distributions import make_pdtype
+from absl import flags
 import baselines.common.tf_util as U
 import gym
+
+FLAGS = flags.FLAGS
 
 class CnnPolicy(object):
 
@@ -20,8 +23,8 @@ class CnnPolicy(object):
             h3 = conv_to_fc(h3)
             h4 = fc(h3, 'fc1', nh=512, init_scale=np.sqrt(2))
             pi = fc(h4, 'pi', nact, act=lambda x:x)
-            pix = fc(h4, 'pix', 83, act=lambda x:x)
-            piy = fc(h4, 'piy', 83, act=lambda x:x)
+            pix = fc(h4, 'pix', FLAGS.screen_resolution, act=lambda x:x)
+            piy = fc(h4, 'piy', FLAGS.screen_resolution, act=lambda x:x)
 
             vf = fc(h4, 'v', 1, act=lambda x:x)
 

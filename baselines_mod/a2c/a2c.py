@@ -4,15 +4,20 @@ import os.path as osp
 from baselines import logger
 from baselines.common import set_global_seeds, explained_variance
 from baselines import bench
-from baselines.a2c.a2c import Runner, Model
 from baselines.common.vec_env.subproc_vec_env import SubprocVecEnv
 
-from baselines_mod.a2c.policies import CnnPolicy, LstmPolicy, LnLstmPolicy
 from absl import flags
 import util.helpers as helpers
 import tensorflow as tf
 
 FLAGS = flags.FLAGS
+
+if FLAGS.action_args:
+    from baselines_mod.a2c.a2c_disc import Runner, Model
+    from baselines_mod.a2c.policies_coords import CnnPolicy, LstmPolicy, LnLstmPolicy
+else:
+    from baselines.a2c.a2c import Runner, Model
+    from baselines_mod.a2c.policies import CnnPolicy, LstmPolicy, LnLstmPolicy
 
 flags.DEFINE_enum('policy', 'cnn', ['cnn', 'lstm', 'lnlstm'], 'Policy architecture')
 flags.DEFINE_enum('lrschedule', 'constant',['linear', 'constant'], 'Learning rate schedule')
@@ -73,9 +78,16 @@ class A2c:
         nbatch = nenvs * nsteps
         tstart = time.time()
         for update in range(1, total_timesteps // nbatch + 1):
-            obs, states, rewards, masks, actions, values = runner.run()
+            if FLAGS.action_args:
+                obs, states, rewards, masks, actions, actionxs, actionys, values = runner.run()
+            else:
+                obs, states, rewards, masks, actions, values = runner.run()
+
             if not FLAGS.validate:
-                policy_loss, value_loss, policy_entropy = model.train(obs, states, rewards, masks, actions, values)
+                if FLAGS.action_args:
+                    policy_loss, value_loss, policy_entropy = model.train(obs, states, rewards, masks, actions, actionxs, actionys, values)
+                else:
+                    policy_loss, value_loss, policy_entropy = model.train(obs, states, rewards, masks, actions, values)
             else:
                 policy_loss, value_loss, policy_entropy = [0, 0, 0]
             if FLAGS.render:

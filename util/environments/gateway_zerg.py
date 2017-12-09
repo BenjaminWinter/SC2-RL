@@ -33,7 +33,7 @@ class GatewayZerg(BaseEnv):
         #  DOWN
         #  SELECT ARMY
         #
-        self._actions = [_ATTACK_SCREEN, _FORCE_FIELD_SCREEN, _GUARDIAN_SHIELD, _NO_OP, _SELECT_ARMY]
+        self._actions = [_ATTACK_SCREEN, _FORCE_FIELD_SCREEN, _GUARDIAN_SHIELD, _NO_OP]
         self._input_layers = [_PLAYER_RELATIVE, _HIT_POINTS, _UNIT_TYPE]
 
     def get_sc2_action(self, action):
