@@ -8,8 +8,8 @@ import util.helpers as helpers
 FLAGS = flags.FLAGS
 
 _PLAYER_RELATIVE = features.SCREEN_FEATURES.player_relative.index
-_UNIT_TYPE = features.SCREEN_FEATURES.unit_type
-_HIT_POINTS = features.SCREEN_FEATURES.unit_hit_points
+_UNIT_TYPE = features.SCREEN_FEATURES.unit_type.index
+_HIT_POINTS = features.SCREEN_FEATURES.unit_hit_points.index
 
 _ATTACK_SCREEN = actions.FUNCTIONS.Attack_screen.id
 _FORCE_FIELD_SCREEN = actions.FUNCTIONS.Effect_ForceField_screen.id
@@ -38,6 +38,9 @@ class GatewayZerg(BaseEnv):
 
     def get_sc2_action(self, action):
         a, x, y = action
+        if self._actions[a] not in self._env_timestep[0].observation['available_actions']:
+            return actions.FunctionCall(_NO_OP, [])
+        
         if self._actions[a] in [_ATTACK_SCREEN, _FORCE_FIELD_SCREEN]:
             args = [_NOT_QUEUED, [x, y]]
         elif self._actions[a] == _NO_OP:
@@ -46,4 +49,5 @@ class GatewayZerg(BaseEnv):
             args = [_NOT_QUEUED]
         else:
             raise ValueError("Cant find action")
+
         return actions.FunctionCall(self._actions[a], args)
