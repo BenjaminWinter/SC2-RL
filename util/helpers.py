@@ -154,15 +154,15 @@ def get_input_layers(ids, obs):
         elif id == features.SCREEN_FEATURES.height_map.index:
             temp = temp * 1
         elif id == features.SCREEN_FEATURES.unit_type.index:
-            temp *= 0.7
+            temp *= 1
         elif id == features.SCREEN_FEATURES.creep.index:
             temp *= 255
         elif id == features.SCREEN_FEATURES.selected.index:
             temp *= 255
         elif id == features.SCREEN_FEATURES.unit_hit_points.index:
-            temp *= 1.5
+            temp *= 1
         elif id == features.SCREEN_FEATURES.unit_energy.index:
-            temp *= 1.2
+            temp *= 1
         else:
             temp *= 1
         layers.append(temp.reshape(temp.shape + (1, )))
