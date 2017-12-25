@@ -10,6 +10,9 @@ FLAGS = flags.FLAGS
 _PLAYER_RELATIVE = features.SCREEN_FEATURES.player_relative.index
 _UNIT_TYPE = features.SCREEN_FEATURES.unit_type.index
 _HIT_POINTS = features.SCREEN_FEATURES.unit_hit_points.index
+_HIT_POINTS_RATIO = features.SCREEN_FEATURES.unit_hit_points_ratio.index
+_ENERGY = features.SCREEN_FEATURES.unit_energy.index
+_ENERGY_RATIO = features.SCREEN_FEATURES.unit_energy_ratio.index
 
 _ATTACK_SCREEN = actions.FUNCTIONS.Attack_screen.id
 _FORCE_FIELD_SCREEN = actions.FUNCTIONS.Effect_ForceField_screen.id
@@ -34,13 +37,13 @@ class GatewayZerg(BaseEnv):
         #  SELECT ARMY
         #
         self._actions = [_ATTACK_SCREEN, _FORCE_FIELD_SCREEN, _GUARDIAN_SHIELD, _NO_OP]
-        self._input_layers = [_PLAYER_RELATIVE, _HIT_POINTS, _UNIT_TYPE]
+        self._input_layers = [_PLAYER_RELATIVE, _HIT_POINTS, _HIT_POINTS_RATIO, _UNIT_TYPE, _ENERGY, _ENERGY_RATIO]
 
     def get_sc2_action(self, action):
         a, x, y = action
         if self._actions[a] not in self._env_timestep[0].observation['available_actions']:
             return actions.FunctionCall(_NO_OP, [])
-        
+
         if self._actions[a] in [_ATTACK_SCREEN, _FORCE_FIELD_SCREEN]:
             args = [_NOT_QUEUED, [x, y]]
         elif self._actions[a] == _NO_OP:

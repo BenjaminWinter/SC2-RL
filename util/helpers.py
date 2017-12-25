@@ -110,7 +110,6 @@ def get_sc2_action(next_action, obs):
 
     return actions.FunctionCall(next_action, args)
 
-
 def get_env_wrapper(render=False):
     cname = toSnake(FLAGS.map)
     _module = ilib.import_module('util.environments.' + cname)
@@ -150,6 +149,22 @@ def get_input_layers(ids, obs):
     layers = []
     for id in ids:
         temp = obs.observation['screen'][id]
+        if id == features.SCREEN_FEATURES.player_relative.index:
+            temp = temp * 255 / 4
+        elif id == features.SCREEN_FEATURES.height_map.index:
+            temp = temp * 1
+        elif id == features.SCREEN_FEATURES.unit_type.index:
+            temp *= 0.7
+        elif id == features.SCREEN_FEATURES.creep.index:
+            temp *= 255
+        elif id == features.SCREEN_FEATURES.selected.index:
+            temp *= 255
+        elif id == features.SCREEN_FEATURES.unit_hit_points.index:
+            temp *= 1.5
+        elif id == features.SCREEN_FEATURES.unit_energy.index:
+            temp *= 1.2
+        else:
+            temp *= 1
         layers.append(temp.reshape(temp.shape + (1, )))
 
     if len(ids) < 2:
@@ -172,7 +187,7 @@ def get_shifted_position(direction, obs, dist):
         player[0] -= dist
     elif direction == 3:
         player[0] += dist
-    return[min(max(0, player[1]), 84 - 1), min(max(0, player[0]), 84 - 1)]
+    return[min(max(0, player[1]), FLAGS.screen_resolution - 1), min(max(0, player[0]), FLAGS.screen_resolution - 1)]
 
 _underscorer1 = re.compile(r'(.)([A-Z][a-z]+)')
 _underscorer2 = re.compile('([a-z0-9])([A-Z])')

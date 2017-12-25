@@ -9,7 +9,9 @@ FLAGS = flags.FLAGS
 
 _PLAYER_RELATIVE = features.SCREEN_FEATURES.player_relative.index
 _HIT_POINTS = features.SCREEN_FEATURES.unit_hit_points.index
+_HIT_POINTS_RATIO = features.SCREEN_FEATURES.unit_hit_points_ratio.index
 _SELECTED = features.SCREEN_FEATURES.selected.index
+_UNIT_TYPE = features.SCREEN_FEATURES.unit_type.index
 
 _ATTACK_SCREEN = actions.FUNCTIONS.Attack_screen.id
 _BLINK_SCREEN = actions.FUNCTIONS.Effect_Blink_screen.id
@@ -33,7 +35,7 @@ class StalkerRoaches(BaseEnv):
         #  SELECT ARMY
         #
         self._actions = [_BLINK_SCREEN, _SELECT_POINT_SCREEN, _NO_OP,]
-        self._input_layers = [_PLAYER_RELATIVE, _HIT_POINTS, _SELECTED, _]
+        self._input_layers = [_PLAYER_RELATIVE, _HIT_POINTS, _SELECTED, _UNIT_TYPE, _HIT_POINTS_RATIO]
 
     def get_sc2_action(self, action):
         a, x, y = action
