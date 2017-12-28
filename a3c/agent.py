@@ -7,12 +7,14 @@ FLAGS = flags.FLAGS
 
 
 class Agent:
-    def __init__(self, action_space, e_start=0, e_end=0, e_steps=0):
+    def __init__(self, action_space, e_start=0, e_end=0, e_steps=0, brain=None, t_queue=None, none_state=None):
         self.e_start = e_start or FLAGS.e_start
         self.e_end = e_end or FLAGS.e_end
         self.e_steps = e_steps or FLAGS.e_steps
         self.action_space = action_space
-
+        self.brain = brain
+        self.queue = t_queue
+        self.none_state = none_state
         self.frames = 0
         self.memory = []  # used for n_step return
         self.R = 0.
@@ -33,7 +35,7 @@ class Agent:
 
         else:
             s = np.array([s])
-            p = shared.brain.predict_p(s)[0]
+            p = self.brain.predict_p(s)[0]
 
             # a = np.argmax(p)
             a = np.random.choice(self.action_space, p=p)
@@ -58,7 +60,7 @@ class Agent:
             while len(self.memory) > 0:
                 n = len(self.memory)
                 s, a, r, s_ = get_sample(self.memory, n)
-                shared.brain.train_push(s, a, r, s_)
+                self.train_push(s, a, r, s_)
 
                 self.R = (self.R - self.memory[0][2]) / FLAGS.gamma
                 self.memory.pop(0)
@@ -67,9 +69,15 @@ class Agent:
 
         if len(self.memory) >= FLAGS.n_step_return:
             s, a, r, s_ = get_sample(self.memory, FLAGS.n_step_return)
-            shared.brain.train_push(s, a, r, s_)
+            self.train_push(s, a, r, s_)
 
             self.R = self.R - self.memory[0][2]
             self.memory.pop(0)
 
             # possible edge case - if an episode ends in <N steps, the computation is incorrect
+
+    def train_push(self, s, a, r, s_):
+        if s_ is None:
+            self.queue.put([s, a, r, self.none_state, 0.])
+        else:
+            self.queue.put([s, a, r, s_, 1.])

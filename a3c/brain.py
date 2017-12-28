@@ -1,4 +1,4 @@
-import threading
+import multiprocessing as mp
 import tensorflow as tf
 import time
 import logging
@@ -19,15 +19,18 @@ flags.DEFINE_integer('min_batch', 32, 'batch Size')
 
 
 class Brain:
-    train_queue = [[], [], [], [], []]  # s, a, r, s', s' terminal mask
-    lock_queue = threading.Lock()
-
-    def __init__(self, s_space, a_space, none_state, saved_model=False):
+    episodes = 0
+    rewards = []
+    steps = []
+    lock_queue = mp.Lock()
+    def __init__(self, s_space, a_space, none_state, saved_model=False, t_queue=None):
         self.logger = logging.getLogger('sc2rl.' + __name__)
 
         self.s_space = s_space
         self.a_space = a_space
         self.none_state = none_state
+        self.queue = t_queue
+
         self.session = tf.Session()
         K.set_session(self.session)
         K.manual_variable_initialization(True)
@@ -101,24 +104,39 @@ class Brain:
         return s_t, a_t, r_t, minimize
 
     def optimize(self):
-        if len(self.train_queue[0]) < FLAGS.min_batch:
-            time.sleep(0.01)  # yield
+        if self.queue.qsize() < FLAGS.min_batch:
+            time.sleep(FLAGS.thread_delay)  # yield
             return
+        s = []
+        a = []
+        r = []
+        s_ = []
+        s_mask = []
 
-        with self.lock_queue:
-            if len(self.train_queue[0]) < FLAGS.min_batch:  # more thread could have passed without lock
-                return  # we can't yield inside lock
+        while not self.queue.empty():
+            arr = self.queue.get()
 
-            s, a, r, s_, s_mask = self.train_queue
-
-            self.logger.info("Avg Reward: " + str(sum(r)/len(r)))
-            self.train_queue = [[], [], [], [], []]
-
+            s.append(arr[0])
+            a.append(arr[1])
+            r.append(arr[2])
+            s_.append(arr[3])
+            s_mask.append(arr[4])
+        try:
             s = np.stack(s)
             a = np.vstack(a)
             r = np.vstack(r)
             s_ = np.stack(s_)
             s_mask = np.vstack(s_mask)
+        except ValueError:
+            print('***************************')
+            for x in range(len(s)):
+                print('s.shape:' + str(s[x].shape))
+                print('a:' + str(a[x]))
+                print('r:' + str(r[x]))
+                print('s_:' + str(s_[x].shape))
+                print('s_mask:' + str(s_mask[x]))
+                print('________________________')
+            print('---------------------------')
 
         if len(s) > 5 * FLAGS.min_batch:
             self.logger.warning("Optimizer alert! Minimizing batch of %d" % len(s))
@@ -128,19 +146,6 @@ class Brain:
 
         s_t, a_t, r_t, minimize = self.graph
         self.session.run(minimize, feed_dict={s_t: s, a_t: a, r_t: r})
-
-    def train_push(self, s, a, r, s_):
-        with self.lock_queue:
-            self.train_queue[0].append(s)
-            self.train_queue[1].append(a)
-            self.train_queue[2].append(r)
-
-            if s_ is None:
-                self.train_queue[3].append(self.none_state)
-                self.train_queue[4].append(0.)
-            else:
-                self.train_queue[3].append(s_)
-                self.train_queue[4].append(1.)
 
     def predict(self, s):
         with self.default_graph.as_default():
@@ -156,4 +161,31 @@ class Brain:
         with self.default_graph.as_default():
             p, v = self.model.predict(s)
             return v
+
+    def get_episodes(self):
+        return self.episodes
+
+    def add_episodes(self, eps):
+        self.lock_queue.acquire()
+        self.episodes += eps
+        self.lock_queue.release()
+
+    def get_rewards(self):
+        return self.rewards
+
+    def add_rewards(self, arr):
+        self.lock_queue.acquire()
+        self.rewards.append(arr)
+        self.lock_queue.release()
+
+    def get_steps(self):
+        return self.steps
+
+    def add_steps(self, arr):
+        self.lock_queue.acquire()
+        self.steps.append(arr)
+        self.lock_queue.release()
+
+    def save_model(self, str):
+        self.model.save(str)
 

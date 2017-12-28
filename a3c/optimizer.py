@@ -1,18 +1,14 @@
 import threading
-import a3c.shared as shared
-
 
 class Optimizer(threading.Thread):
     stop_signal = False
 
-    def __init__(self, thread_num):
-        threading.Thread.__init__(self)
+    def __init__(self, thread_num, brain=None, stop=None):
+        super(Optimizer, self).__init__()
         self.thread_num = thread_num
+        self.brain = brain
+        self.stop = stop
 
     def run(self):
-        while not self.stop_signal:
-            shared.brain.optimize()
-
-    def stop(self):
-        self.stop_signal = True
-
+        while not self.stop.value:
+            self.brain.optimize()

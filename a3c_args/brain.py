@@ -1,4 +1,4 @@
-import threading
+import multiprocessing as mp
 import tensorflow as tf
 import time
 import logging
@@ -19,15 +19,18 @@ flags.DEFINE_integer('min_batch', 32, 'batch Size')
 
 
 class Brain:
-    train_queue = [[], [], [], [], [], [], []]  # s, a,, x, y, r, s', s' terminal mask
-    lock_queue = threading.Lock()
-
-    def __init__(self, s_space, a_space, none_state, saved_model=False):
+    episodes = 0
+    rewards = []
+    steps = []
+    lock_queue = mp.Lock()
+    def __init__(self, s_space, a_space, none_state, saved_model=False, t_queue=None):
         self.logger = logging.getLogger('sc2rl.' + __name__)
 
         self.s_space = s_space
         self.a_space = a_space
         self.none_state = none_state
+        self.queue = t_queue
+
         self.session = tf.Session()
         K.set_session(self.session)
         K.manual_variable_initialization(True)
@@ -71,65 +74,86 @@ class Brain:
         #dense2 = Dense(50, activation='relu')(dense1)
 
         out_actions = Dense(self.a_space, activation='softmax')(dense1)
+        out_actionxs = Dense(FLAGS.screen_resolution, activation='softmax')(dense1)
+        out_actionys = Dense(FLAGS.screen_resolution, activation='softmax')(dense1)
         out_value = Dense(1, activation='linear')(dense1)
-        out_x = Dense(FLAGS.screen_resolution, activation='softmax')(dense1)
-        out_y = Dense(FLAGS.screen_resolution, activation='softmax')(dense1)
 
-        model = Model(inputs=[c_input], outputs=[out_actions, out_value, out_x, out_y])
+        model = Model(inputs=[c_input], outputs=[out_actions, out_actionxs, out_actionys, out_value])
         model._make_predict_function()  # have to initialize before threading
 
         return model
 
     def _build_graph(self, model):
         s_t = tf.placeholder(tf.float32, shape=(None, ) + self.s_space)
-
         a_t = tf.placeholder(tf.float32, shape=(None, self.a_space))
         x_t = tf.placeholder(tf.float32, shape=(None, FLAGS.screen_resolution))
         y_t = tf.placeholder(tf.float32, shape=(None, FLAGS.screen_resolution))
-
         r_t = tf.placeholder(tf.float32, shape=(None, 1))  # not immediate, but discounted n step reward
 
-        p, v, x, y = model(s_t)
+        p, px, py, v = model(s_t)
 
         log_prob = tf.log(tf.reduce_sum(p * a_t, axis=1, keep_dims=True) + 1e-10)
-        log_x = tf.log(tf.reduce_sum(x * x_t, axis=1, keep_dims=True) + 1e-10)
-        log_y = tf.log(tf.reduce_sum(y * y_t, axis=1, keep_dims=True) + 1e-10)
-
+        log_probx = tf.log(tf.reduce_sum(px * x_t, axis=1, keep_dims=True) + 1e-10)
+        log_proby = tf.log(tf.reduce_sum(py * y_t, axis=1, keep_dims=True) + 1e-10)
         advantage = r_t - v
 
-        loss_policy = - (0.5 * log_prob + 0.25 * log_x + 0.25 * log_y ) * tf.stop_gradient(advantage)  # maximize policy
+        loss_policy = - log_prob * tf.stop_gradient(advantage) + 0.5 * log_probx + 0.5 * log_proby # maximize policy
         loss_value = FLAGS.loss_v * tf.square(advantage)  # minimize value error
         entropy = FLAGS.loss_entropy * tf.reduce_sum(p * tf.log(p + 1e-10), axis=1,
-                                               keep_dims=True)  # maximize entropy (regularization)
+                                               keep_dims=True)  + 0.5*tf.reduce_sum(px * tf.log(px + 1e-10), axis=1,
+                                               keep_dims=True) + 0.5*tf.reduce_sum(py * tf.log(py + 1e-10), axis=1,
+                                               keep_dims=True)# maximize entropy (regularization)
 
         loss_total = tf.reduce_mean(loss_policy + loss_value + entropy)
 
         optimizer = tf.train.RMSPropOptimizer(FLAGS.lr, decay=.99)
         minimize = optimizer.minimize(loss_total)
 
-        return s_t, a_t, x_t, y_t,  r_t, minimize
+        return s_t, a_t, x_t, y_t, r_t, minimize
 
     def optimize(self):
-        if len(self.train_queue[0]) < FLAGS.min_batch:
-            time.sleep(0.01)  # yield
+        if self.queue.qsize() < FLAGS.min_batch:
+            time.sleep(FLAGS.thread_delay)  # yield
             return
+        s = []
+        a = []
+        x = []
+        y = []
+        r = []
+        s_ = []
+        s_mask = []
 
-        with self.lock_queue:
-            if len(self.train_queue[0]) < FLAGS.min_batch:  # more thread could have passed without lock
-                return  # we can't yield inside lock
+        while not self.queue.empty():
+            arr = self.queue.get()
 
-            s, a, x, y, r, s_, s_mask = self.train_queue
-
-            self.logger.info("Avg Reward: " + str(sum(r)/len(r)))
-            self.train_queue = [[], [], [], [], [], [], []]
-
-            s = np.stack(s)
-            a = np.vstack(a)
-            x = np.vstack(x)
-            y = np.vstack(y)
-            r = np.vstack(r)
-            s_ = np.stack(s_)
-            s_mask = np.vstack(s_mask)
+            s.append(arr[0])
+            a.append(arr[1])
+            x.append(arr[2])
+            y.append(arr[3])
+            r.append(arr[4])
+            s_.append(arr[5])
+            s_mask.append(arr[6])
+        # try:
+        s = np.stack(s)
+        a = np.vstack(a)
+        x = np.vstack(x)
+        y = np.vstack(y)
+        r = np.vstack(r)
+        s_ = np.stack(s_)
+        s_mask = np.vstack(s_mask)
+        # except ValueError:
+        #     print('***************************')
+        #     print('optimize error')
+        #     for elem in range(len(s)):
+        #         print('s.shape:' + str(s[elem].shape))
+        #         print('a:' + str(a[elem]))
+        #         print('x:' + str(x[elem]))
+        #         print('y:' + str(y[elem]))
+        #         print('r:' + str(r[elem]))
+        #         print('s_:' + str(s_[elem].shape))
+        #         print('s_mask:' + str(s_mask[elem]))
+        #         print('________________________')
+        #     print('---------------------------')
 
         if len(s) > 5 * FLAGS.min_batch:
             self.logger.warning("Optimizer alert! Minimizing batch of %d" % len(s))
@@ -138,35 +162,47 @@ class Brain:
         r = r + shared.gamma_n * v * s_mask  # set v to 0 where s_ is terminal state
 
         s_t, a_t, x_t, y_t, r_t, minimize = self.graph
-        self.session.run(minimize, feed_dict={s_t: s, a_t: a,x_t: x, y_t: y, r_t: r})
-
-    def train_push(self, s, a, x, y, r, s_):
-        with self.lock_queue:
-            self.train_queue[0].append(s)
-            self.train_queue[1].append(a)
-            self.train_queue[2].append(x)
-            self.train_queue[3].append(y)
-            self.train_queue[4].append(r)
-
-            if s_ is None:
-                self.train_queue[5].append(self.none_state)
-                self.train_queue[6].append(0.)
-            else:
-                self.train_queue[5].append(s_)
-                self.train_queue[6].append(1.)
+        self.session.run(minimize, feed_dict={s_t: s, a_t: a, x_t: x, y_t: y, r_t: r})
 
     def predict(self, s):
         with self.default_graph.as_default():
-            p, v, x, y = self.model.predict(s)
-            return p, v, x, y
+            p, px, py, v = self.model.predict(s)
+            return p, px, py, v
 
     def predict_p(self, s):
         with self.default_graph.as_default():
-            p, v, x, y = self.model.predict(s)
-            return p, x, y
+            p, px, py, v = self.model.predict(s)
+            return p, px, py
 
     def predict_v(self, s):
         with self.default_graph.as_default():
-            p, v, x, y = self.model.predict(s)
+            p, px, py, v = self.model.predict(s)
             return v
+
+    def get_episodes(self):
+        return self.episodes
+
+    def add_episodes(self, eps):
+        self.lock_queue.acquire()
+        self.episodes += eps
+        self.lock_queue.release()
+
+    def get_rewards(self):
+        return self.rewards
+
+    def add_rewards(self, arr):
+        self.lock_queue.acquire()
+        self.rewards.append(arr)
+        self.lock_queue.release()
+
+    def get_steps(self):
+        return self.steps
+
+    def add_steps(self, arr):
+        self.lock_queue.acquire()
+        self.steps.append(arr)
+        self.lock_queue.release()
+
+    def save_model(self, str):
+        self.model.save(str)
 
