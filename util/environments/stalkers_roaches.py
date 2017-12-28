@@ -21,7 +21,7 @@ _SELECT_ARMY = actions.FUNCTIONS.select_army.id
 _NOT_QUEUED = [0]
 
 
-class StalkerRoaches(BaseEnv):
+class StalkersRoaches(BaseEnv):
     def __init__(self, render):
         BaseEnv.__init__(self, render)
         self.logger = logging.getLogger('sc2rl.' + __name__)
@@ -39,6 +39,9 @@ class StalkerRoaches(BaseEnv):
 
     def get_sc2_action(self, action):
         a, x, y = action
+        if self._actions[a] not in self._env_timestep[0].observation['available_actions']:
+            return actions.FunctionCall(_NO_OP, [])
+        
         if self._actions[a] in [_BLINK_SCREEN, _SELECT_POINT_SCREEN]:
             args = [_NOT_QUEUED, [x, y]]
         elif self._actions[a] == _NO_OP:
