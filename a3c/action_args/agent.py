@@ -9,10 +9,7 @@ FLAGS = flags.FLAGS
 
 
 class Agent:
-    def __init__(self, action_space, e_start=0, e_end=0, e_steps=0, brain=None, t_queue=None, none_state=None):
-        self.e_start = e_start or FLAGS.e_start
-        self.e_end = e_end or FLAGS.e_end
-        self.e_steps = e_steps or FLAGS.e_steps
+    def __init__(self, action_space, brain=None, t_queue=None, none_state=None):
         self.action_space = action_space
         self.brain = brain
         self.queue = t_queue
@@ -21,32 +18,19 @@ class Agent:
         self.memory = []  # used for n_step return
         self.R = 0.
 
-    def get_epsilon(self):
-        if self.frames >= self.e_steps:
-            return self.e_end
-        else:
-            return self.e_start + self.frames * (self.e_end - self.e_start) / self.e_steps  # linearly interpolate
-
     def act(self, s):
-        eps = self.get_epsilon()
-
         self.frames = self.frames + 1
 
-        if random.random() < eps:
-            return random.randint(0, self.action_space - 1), random.randint(0, FLAGS.screen_resolution - 1), random.randint(0, FLAGS.screen_resolution - 1)
-
-
-        else:
-            s = np.array([s])
-            p, px, py = self.brain.predict_p(s)
-            p=p[0]
-            px=px[0]
-            py=py[0]
-            # a = np.argmax(p)
-            a = np.random.choice(self.action_space, p=p)
-            x = np.random.choice(FLAGS.screen_resolution, p=px)
-            y = np.random.choice(FLAGS.screen_resolution, p=py)
-            return a, x, y
+        s = np.array([s])
+        p, px, py = self.brain.predict_p(s)
+        p=p[0]
+        px=px[0]
+        py=py[0]
+        # a = np.argmax(p)
+        a = np.random.choice(self.action_space, p=p)
+        x = np.random.choice(FLAGS.screen_resolution, p=px)
+        y = np.random.choice(FLAGS.screen_resolution, p=py)
+        return a, x, y
 
     def train(self, s, a, x, y, r, s_):
         def get_sample(memory, n):

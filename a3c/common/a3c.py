@@ -24,9 +24,6 @@ else:
     from a3c.standard.environment import Environment
     from a3c.standard.brain import Brain
 
-flags.DEFINE_float('e_start', 0.4, 'Starting Epsilon')
-flags.DEFINE_float('e_end', 0.15, 'End Epsilon')
-flags.DEFINE_float('e_steps', 80000, 'Number of steps over which to decay Epsilon')
 flags.DEFINE_float('gamma', 0.99, 'Discount Value Gamma')
 flags.DEFINE_integer('n_step_return', 8, 'N Step Return Value')
 flags.DEFINE_integer('optimizers', 2, 'Number of Optimizer Threads')
@@ -42,8 +39,6 @@ class A3c:
         :type _env: BaseEnv
         :type episodes Integer
         """
-        e_starts = [random.uniform(0.2, 0.4) for x in range(FLAGS.threads)]
-        e_ends = [random.uniform(0.05, 0.2) for x in range(FLAGS.threads)]
 
         shared.gamma_n = FLAGS.gamma ** FLAGS.n_step_return
         self.none_state = np.zeros(s_space)
@@ -58,7 +53,7 @@ class A3c:
         self.stop_signal = mp.Value('i', 0)
 
         if not FLAGS.validate:
-            self.envs = [Environment(brain=self.shared_brain, stop=self.stop_signal, t_queue=self.queue, thread_num=i, log_data=True, e_start=e_starts[i], e_end=e_ends[i], none_state=self.none_state) for i in range(FLAGS.threads)]
+            self.envs = [Environment(brain=self.shared_brain, stop=self.stop_signal, t_queue=self.queue, thread_num=i, log_data=True, none_state=self.none_state) for i in range(FLAGS.threads)]
             self.opts = [Optimizer(brain=self.shared_brain, stop=self.stop_signal, thread_num=i) for i in range(FLAGS.optimizers)]
 
 
@@ -72,7 +67,7 @@ class A3c:
     def run(self):
         if FLAGS.validate:
             self.logger.info('starting validation')
-            run_env = Environment(brain=self.shared_brain, stop=self.stop_signal, t_queue=self.queue, e_start=0., e_end=0., log_data=True, none_state=self.none_state)
+            run_env = Environment(brain=self.shared_brain, stop=self.stop_signal, t_queue=self.queue, log_data=True, none_state=self.none_state)
             run_env.start()
             time.sleep(FLAGS.run_time)
             run_env.stop()
