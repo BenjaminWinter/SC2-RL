@@ -1,14 +1,14 @@
-import multiprocessing as mp
-import tensorflow as tf
-import time
 import logging
+import multiprocessing as mp
+import time
 
+import tensorflow as tf
+from absl import flags
+from keras import backend as K
 from keras.layers import *
 from keras.models import *
-from keras import backend as K
 
-import a3c.shared as shared
-from absl import flags
+import a3c.common.shared as shared
 
 FLAGS = flags.FLAGS
 

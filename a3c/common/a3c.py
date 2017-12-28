@@ -1,20 +1,29 @@
-import time
-from absl import flags
-import numpy as np
 import logging
-import matplotlib as mpl
-mpl.use('Agg')
-import matplotlib.pyplot as plt
-
-from .environment import Environment
-from .optimizer import Optimizer
-from .brain import Brain
+import time
+import random
 import multiprocessing as mp
 from multiprocessing.managers import BaseManager
-import a3c.shared as shared
-import random
+
+import matplotlib as mpl
+mpl.use('Agg')
+
+import numpy as np
+from absl import flags
+import matplotlib.pyplot as plt
+
+from .optimizer import Optimizer
+import a3c.common.shared as shared
+
 
 FLAGS = flags.FLAGS
+
+if FLAGS.action_args:
+    from a3c.action_args.environment import Environment
+    from a3c.action_args.brain import Brain
+else:
+    from a3c.standard.environment import Environment
+    from a3c.standard.brain import Brain
+
 flags.DEFINE_float('e_start', 0.4, 'Starting Epsilon')
 flags.DEFINE_float('e_end', 0.15, 'End Epsilon')
 flags.DEFINE_float('e_steps', 80000, 'Number of steps over which to decay Epsilon')

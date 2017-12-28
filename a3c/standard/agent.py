@@ -1,7 +1,9 @@
 import random
+
 import numpy as np
 from absl import flags
-import a3c.shared as shared
+
+import a3c.common.shared as shared
 
 FLAGS = flags.FLAGS
 
