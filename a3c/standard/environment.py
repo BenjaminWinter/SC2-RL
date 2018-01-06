@@ -1,6 +1,6 @@
 import multiprocessing as mp
 from absl import flags
-import time
+import time, random
 import logging
 from .agent import Agent
 import util.helpers as helpers
@@ -13,17 +13,19 @@ flags.DEFINE_float('thread_delay', 0.0001, 'Delay of Workers. used to use more W
 class Environment(mp.Process):
     stop_signal = False
 
-    def __init__(self, sc2env=None, thread_num=999, log_data=False, brain=None, stop=None, t_queue=None, none_state=None):
+    def __init__(self, sc2env=None, thread_num=999, log_data=False, brain=None, stop=None, t_queue=None, none_state=None, replay_data=None):
         super(Environment, self).__init__()
         self.logger = logging.getLogger('sc2rl.' + __name__ + " | " + str(thread_num))
         self.start_time = time.time()
 
+        self.replay_data = replay_data
         self.episodes = 0
         self.rewards = []
         self.steps = []
         self.log_data = log_data
         self.brain = brain
         self.stop = stop
+        self.t_queue = t_queue
 
         if sc2env is not None:
             self.env = sc2env
@@ -52,6 +54,9 @@ class Environment(mp.Process):
                 s_ = None
 
             if (not FLAGS.validate) or self.e_start > 0:
+                if self.replay_data and random.random() < FLAGS.replay_amount:
+                    obj = self.replay_data[random.randint(0, len(self.replay_data))]
+                    self.t_queue.put(obj)
                 self.agent.train(s, a, r, s_)
 
             s = s_

@@ -1,5 +1,5 @@
 import os.path as osp
-import time
+import time, json, random
 import joblib
 import numpy as np
 import tensorflow as tf
@@ -12,6 +12,9 @@ from baselines.acktr.utils import Scheduler, find_trainable_variables
 from baselines.acktr.utils import cat_entropy, mse
 from baselines.acktr import kfac
 
+from absl import flags
+
+FLAGS = flags.FLAGS
 
 class Model(object):
 
@@ -23,6 +26,10 @@ class Model(object):
                                 inter_op_parallelism_threads=nprocs)
         config.gpu_options.allow_growth = True
         self.sess = sess = tf.Session(config=config)
+
+        if FLAGS.replay_file:
+            self.replay_data = json.load(FLAGS.replay_file)
+
         nact = ac_space.n
         nbatch = nenvs * nsteps
         A = tf.placeholder(tf.int32, [nbatch])
@@ -72,6 +79,10 @@ class Model(object):
         self.lr = Scheduler(v=lr, nvalues=total_timesteps, schedule=lrschedule)
 
         def train(obs, states, rewards, masks, actions, actionxs, actionys, values):
+            if FLAGS.replay_file and random.random() * nenvs < FLAGS.replay_amount:
+                obj = self.replay_data[random.randint(0, len(self.replay_data))]
+                obs.append(obj[0])
+
             advs = rewards - values
             for step in range(len(obs)):
                 cur_lr = self.lr.value()
@@ -115,6 +126,7 @@ class Runner(object):
     def __init__(self, env, model, nsteps, nstack, gamma):
         self.env = env
         self.model = model
+        self.replay_data = None
         nh, nw, nc = env.observation_space.shape
         nenv = env.num_envs
         self.batch_ob_shape = (nenv*nsteps, nh, nw, nc*nstack)
@@ -180,6 +192,7 @@ class Runner(object):
         mb_actionys = mb_actionys.flatten()
         mb_values = mb_values.flatten()
         mb_masks = mb_masks.flatten()
+
         return mb_obs, mb_states, mb_rewards, mb_masks, mb_actions, mb_actionxs, mb_actionys, mb_values
 
 def learn(policy, env, seed, total_timesteps=int(40e6), gamma=0.99, log_interval=1, nprocs=32, nsteps=20,

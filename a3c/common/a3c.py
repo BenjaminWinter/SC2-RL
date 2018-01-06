@@ -1,6 +1,5 @@
 import logging
-import time
-import random
+import time, json
 import multiprocessing as mp
 from multiprocessing.managers import BaseManager
 
@@ -44,6 +43,10 @@ class A3c:
         self.none_state = np.zeros(s_space)
         self.none_state = self.none_state.reshape(s_space)
 
+        self.replay_data = []
+        if FLAGS.replay_file:
+            self.replay_data = json.load(FLAGS.replay_file)
+
         self.manager = A3CManager()
         self.manager.start()
         self.q_manager = mp.Manager()
@@ -53,7 +56,7 @@ class A3c:
         self.stop_signal = mp.Value('i', 0)
 
         if not FLAGS.validate:
-            self.envs = [Environment(brain=self.shared_brain, stop=self.stop_signal, t_queue=self.queue, thread_num=i, log_data=True, none_state=self.none_state) for i in range(FLAGS.threads)]
+            self.envs = [Environment(replay_data=self.replay_data, brain=self.shared_brain, stop=self.stop_signal, t_queue=self.queue, thread_num=i, log_data=True, none_state=self.none_state) for i in range(FLAGS.threads)]
             self.opts = [Optimizer(brain=self.shared_brain, stop=self.stop_signal, thread_num=i) for i in range(FLAGS.optimizers)]
 
 

@@ -1,6 +1,6 @@
 import logging
 import multiprocessing as mp
-import time
+import time, random
 
 import tensorflow as tf
 from absl import flags
@@ -9,6 +9,7 @@ from keras.layers import *
 from keras.models import *
 
 import a3c.common.shared as shared
+import json
 
 FLAGS = flags.FLAGS
 
@@ -16,7 +17,6 @@ flags.DEFINE_float('loss_v', 0.5, 'v loss coefficient')
 flags.DEFINE_float('loss_entropy', 0.01, 'entropy coefficient')
 flags.DEFINE_float('lr', 5e-3, 'learning rate')
 flags.DEFINE_integer('min_batch', 32, 'batch Size')
-
 
 class Brain:
     episodes = 0
@@ -122,6 +122,7 @@ class Brain:
         r = []
         s_ = []
         s_mask = []
+
 
         while not self.queue.empty():
             arr = self.queue.get()
