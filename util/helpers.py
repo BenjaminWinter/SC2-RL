@@ -145,27 +145,22 @@ def get_env_wrapper(render=False):
 #     else:
 #         raise ValueError("No Wrapper for Map found")
 
-def get_input_layers(ids, obs):
+def get_input_layers(ids, history):
     layers = []
-    for id in ids:
-        temp = obs.observation['screen'][id]
-        if id == features.SCREEN_FEATURES.player_relative.index:
-            temp = temp * 255 / 4
-        elif id == features.SCREEN_FEATURES.height_map.index:
-            temp = temp * 1
-        elif id == features.SCREEN_FEATURES.unit_type.index:
-            temp *= 1
-        elif id == features.SCREEN_FEATURES.creep.index:
-            temp *= 255
-        elif id == features.SCREEN_FEATURES.selected.index:
-            temp *= 255
-        elif id == features.SCREEN_FEATURES.unit_hit_points.index:
-            temp *= 1
-        elif id == features.SCREEN_FEATURES.unit_energy.index:
-            temp *= 1
-        else:
-            temp *= 1
-        layers.append(temp.reshape(temp.shape + (1, )))
+
+    for obs in history:
+        tstep = obs[0]
+        for id in ids:
+            temp = tstep.observation['screen'][id]
+            if id == features.SCREEN_FEATURES.player_relative.index:
+                temp = temp * 255 / 4
+            elif id == features.SCREEN_FEATURES.creep.index:
+                temp *= 255
+            elif id == features.SCREEN_FEATURES.selected.index:
+                temp *= 255
+            else:
+                temp *= 1
+            layers.append(temp.reshape(temp.shape + (1, )))
 
     if len(ids) < 2:
         return layers[0]

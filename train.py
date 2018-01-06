@@ -30,6 +30,7 @@ flags.DEFINE_bool("trace", False, "Whether to trace the code execution.")
 flags.DEFINE_bool("validate", False, 'Validation instead of training mode')
 flags.DEFINE_bool("action_args", False, 'wether simple environment or envs'
                                         ' with arguments should be used')
+flags.DEFINE_integer('history_size', 4, 'Number of Steps for an environment to remember')
 flags.DEFINE_integer("screen_resolution", 84,
                      "Resolution for screen feature layers.")
 flags.DEFINE_integer("minimap_resolution", 64,

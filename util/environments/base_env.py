@@ -5,6 +5,7 @@ import gym.spaces as spaces
 import util.helpers as helpers
 FLAGS = flags.FLAGS
 
+
 class BaseEnv(gym.Env):
     def __enter__(self):
         return self
@@ -24,14 +25,18 @@ class BaseEnv(gym.Env):
                 minimap_size_px=(FLAGS.minimap_resolution, FLAGS.minimap_resolution),
                 visualize=render)
         self.do_render = render
+        self.resets = 0
         self._env = env
         self._env_timestep = self._env.reset()
+        self.history = [self._env_timestep] * FLAGS.history_size
         self._actions = [0]
         self._input_layers = [0]
-        self.resets = 0
+
 
     def _step(self, action):
         self._env_timestep = self._env.step([self.get_sc2_action(action)])
+        self.history.append(self._env_timestep)
+        self.history = self.history[1:]
         r = self._env_timestep[0].reward
         s_ = self.get_state()
 
@@ -39,18 +44,12 @@ class BaseEnv(gym.Env):
 
     def _reset(self):
         self.resets += 1
+
         if self.resets % 8000 == 0:
-            self._env = sc2_env.SC2Env(
-                map_name=FLAGS.map,
-                agent_race=FLAGS.agent_race,
-                bot_race=FLAGS.bot_race,
-                difficulty=FLAGS.difficulty,
-                step_mul=FLAGS.step_mul,
-                game_steps_per_episode=FLAGS.game_steps_per_episode,
-                screen_size_px=(FLAGS.screen_resolution, FLAGS.screen_resolution),
-                minimap_size_px=(FLAGS.minimap_resolution, FLAGS.minimap_resolution),
-                visualize=self.do_render)
+            self.rebuild()
+
         self._env_timestep = self._env.reset()
+        self.history = [self._env_timestep] * FLAGS.history_size
         return self.get_state()
 
     @property
@@ -62,7 +61,7 @@ class BaseEnv(gym.Env):
         return spaces.Box(low=0, high=255, shape=self.get_state().shape)
 
     def get_state(self):
-        return helpers.get_input_layers(self._input_layers, self._env_timestep[0])
+        return helpers.get_input_layers(self._input_layers, self.history)
 
     def rebuild(self):
         self._env = sc2_env.SC2Env(
