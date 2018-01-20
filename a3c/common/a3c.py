@@ -4,6 +4,8 @@ import multiprocessing as mp
 from multiprocessing.managers import BaseManager
 
 import matplotlib as mpl
+import pickle
+import sys
 mpl.use('Agg')
 
 import numpy as np
@@ -15,6 +17,8 @@ import a3c.common.shared as shared
 
 
 FLAGS = flags.FLAGS
+FLAGS(sys.argv)
+
 
 if FLAGS.action_args:
     from a3c.action_args.environment import Environment
@@ -45,18 +49,19 @@ class A3c:
 
         self.replay_data = []
         if FLAGS.replay_file:
-            self.replay_data = json.load(FLAGS.replay_file)
+            with open(FLAGS.replay_file, 'rb') as f:
+                self.replay_data = pickle.load(f)
 
         self.manager = A3CManager()
         self.manager.start()
         self.q_manager = mp.Manager()
         self.queue = self.q_manager.Queue()
 
-        self.shared_brain = self.manager.Brain(s_space, a_space, self.none_state, t_queue=self.queue)
+        self.shared_brain = self.manager.Brain(s_space, a_space, self.none_state, t_queue=self.queue, replay_data=self.replay_data)
         self.stop_signal = mp.Value('i', 0)
 
         if not FLAGS.validate:
-            self.envs = [Environment(replay_data=self.replay_data, brain=self.shared_brain, stop=self.stop_signal, t_queue=self.queue, thread_num=i, log_data=True, none_state=self.none_state) for i in range(FLAGS.threads)]
+            self.envs = [Environment(brain=self.shared_brain, stop=self.stop_signal, t_queue=self.queue, thread_num=i, log_data=True, none_state=self.none_state) for i in range(FLAGS.threads)]
             self.opts = [Optimizer(brain=self.shared_brain, stop=self.stop_signal, thread_num=i) for i in range(FLAGS.optimizers)]
 
 

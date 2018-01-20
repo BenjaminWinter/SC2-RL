@@ -48,7 +48,7 @@ flags.DEFINE_string("map", None, "Name of a map to use.")
 flags.DEFINE_string('algorithm', 'test.Test', 'Which Algorithm to run')
 flags.DEFINE_string('load_model', None, 'Keras model to load')
 flags.DEFINE_string('save_model', 'models/training_model', 'Where to save Keras model')
-flags.DEFINE_string('replay_file', '', 'Directory of converted replays for training augmentation')
+flags.DEFINE_string('replay_file', '', 'File of converted replays for training augmentation')
 flags.mark_flag_as_required("map")
 
 

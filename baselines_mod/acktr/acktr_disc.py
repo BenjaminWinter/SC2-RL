@@ -1,5 +1,5 @@
 import os.path as osp
-import time, json, random
+import time, json, random, pickle
 import joblib
 import numpy as np
 import tensorflow as tf
@@ -28,7 +28,7 @@ class Model(object):
         self.sess = sess = tf.Session(config=config)
 
         if FLAGS.replay_file:
-            self.replay_data = json.load(FLAGS.replay_file)
+            self.replay_data = pickle.load(FLAGS.replay_file)
 
         nact = ac_space.n
         nbatch = nenvs * nsteps

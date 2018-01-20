@@ -6,13 +6,17 @@ from pysc2 import run_configs
 from pysc2.env import sc2_env
 from pysc2.lib import renderer_human
 from pysc2.lib import stopwatch
-from pysc2.lib import features
+from pysc2.lib import features, actions
+from pysc2.lib.protocol import ProtocolError
 from a3c.action_args.agent import Agent
+
 from util import helpers
 import multiprocessing as mp
+import maps.scenarios as scenarios
 import mpyq
 import six
 import train
+import pickle
 
 import a3c.common.shared as shared
 
@@ -29,7 +33,7 @@ flags.DEFINE_string('dir', 'logs/replays', 'replaydirectory')
 
 def main(argv):
     import a3c.common.a3c
-
+    scenarios.load_scenarios()
     run_config = run_configs.get()
 
     interface = sc_pb.InterfaceOptions()
@@ -62,40 +66,107 @@ def main(argv):
         game_version = get_game_version(replay_data)
         with run_config.start(game_version=game_version,
                               full_screen=False) as controller:
-            feat = features.Features(controller.game_info())
+
 
             controller.start_replay(start_replay)
+            feat = features.Features(controller.game_info())
+
             obs = controller.observe()
-            s = helpers.get_input_layers(env.input_layers, obs[0])
+            s = get_obs(env._input_layers, obs)
+            results = 0
+            last_reward = 0
             while True:
-                action = feat.reverse_action(obs.actions[0])
+                # controller.step(FLAGS.step_mul)
+                # obs = controller.observe()
+                # continue
+
+                actions = []
+                for a in obs.actions:
+                    try:
+                        temp = feat.reverse_action(a)
+                        actions.append([env._actions.index(temp[0]), temp.arguments[1][0], temp.arguments[1][1]])
+                    except ValueError:
+                        pass
+
+                if len(actions) < 1:
+                    try:
+                        controller.step(FLAGS.step_mul)
+                    except ProtocolError:
+                        break;
+
+                    obs = controller.observe()
+                    s = get_obs(env._input_layers, obs)
+                    continue
+
+                r = obs.observation.score.score
+
                 controller.step(FLAGS.step_mul)
                 obs = controller.observe()
-                r = obs.reward
-                s_ = helpers.get_input_layers(env.input_layers, obs[0])
 
-                if obs.done:
+                s_ = get_obs(env._input_layers, obs)
+
+                if r == 0 and last_reward != 0:
                     s_ = None
-                x = 0
-                y = 0
-                replay_agent.train(s, action, x, y, r, s_)
+                    print('Episode end')
+                    last_reward = 0
 
-                if obs.done:
-                    controller.step(FLAGS.step_mul)
-                    obs = controller.observe()
-                    s = helpers.get_input_layers(env.input_layers, obs[0])
-                else:
-                    s = s_
+                replay_agent.train(s, actions[0][0], actions[0][1], actions[0][2], r, s_)
 
                 if obs.player_result:
                     break
-    with open('./replay_info/info.json', 'w+') as outfile:
+                else:
+                    s = s_
+                    last_reward = r
+
+    with open('./replay_info/info.json', 'wb+') as outfile:
         obj = []
         while not queue.empty():
+            #temp = queue.get()
+            if s is None:
+                continue
+
             obj.append(queue.get())
+            # s_ = None
+            # if temp[5] is not None:
+            #     s_ = temp[5].tolist()
 
-        outfile.write(json.dump(obj))
+            #obj.append([temp[0].tolist(), temp[1].tolist(), temp[2].tolist(), temp[3].tolist(), temp[4], s_])
 
+        pickle.dump(obj, outfile)
+        #json.dump(obj, outfile)
+
+sf = features.SCREEN_FEATURES
+FEATURE_IDS = {
+    sf.height_map.index : 'height_map',
+    sf.visibility_map.index : 'visibility',
+    sf.creep.index : 'creep',
+    sf.power.index : 'power',
+    sf.player_id.index : 'player_id',
+    sf.unit_type.index : 'unit_type',
+    sf.selected.index : 'selected',
+    sf.unit_hit_points.index : 'unit_hit_points',
+    sf.unit_energy.index : 'unit_energy',
+    sf.player_relative.index : 'player_relative',
+    sf.unit_hit_points_ratio.index : 'unit_hit_points_ratio',
+    sf.unit_energy_ratio.index : 'unit_energy_ratio',
+    sf.effects.index : 'effects'
+}
+TYPES = {
+    8 : 'c',
+    32 : 'i'
+}
+
+
+def get_obs(ids, obs):
+    layers = []
+    for id in ids:
+        bytelayer = getattr(obs.observation.feature_layer_data.renders, FEATURE_IDS[id])
+        layer = np.frombuffer(bytelayer.data, dtype=TYPES[bytelayer.bits_per_pixel]).reshape((FLAGS.screen_resolution, FLAGS.screen_resolution))
+        layers.append(layer.reshape(layer.shape + (1,)))
+
+    if len(ids) < 2:
+        return layers[0]
+    return np.concatenate(tuple(layers), 2)
 
 def get_game_version(replay_data):
   replay_io = six.BytesIO()
