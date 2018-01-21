@@ -1,10 +1,10 @@
 import multiprocessing as mp
 from absl import flags
 import time
-import logging
+import logging, os
 from .agent import Agent
 import util.helpers as helpers
-
+from baselines import bench
 FLAGS = flags.FLAGS
 
 flags.DEFINE_float('thread_delay', 0.0001, 'Delay of Workers. used to use more Workers than physical CPUs')
@@ -28,7 +28,7 @@ class Environment(mp.Process):
         if sc2env is not None:
             self.env = sc2env
         else:
-            self.env = helpers.get_env_wrapper(render=FLAGS.render)
+            self.env = bench.Monitor(helpers.get_env_wrapper(render=FLAGS.render), os.path.join('logs/', '{}.monitor.json'.format(thread_num)))
 
         self.agent = Agent(self.env.action_space.n, brain=brain, t_queue=t_queue, none_state=none_state)
 

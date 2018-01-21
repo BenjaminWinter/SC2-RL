@@ -138,6 +138,26 @@ class Brain:
                 r.append(temp[4])
                 s_.append(temp[5])
                 s_mask.append(temp[6])
+                print('**************')
+                print('replay')
+                print(temp[0].shape)
+                print(temp[1].shape)
+                print(temp[2].shape)
+                print(temp[3].shape)
+                print(temp[4])
+                print(temp[5].shape)
+                print(temp[6])
+                print('**************')
+                print('**************')
+                print('actual')
+                print(arr[0].shape)
+                print(arr[1].shape)
+                print(arr[2].shape)
+                print(arr[3].shape)
+                print(arr[4])
+                print(arr[5].shape)
+                print(arr[6])
+                print('**************')
 
             s.append(arr[0])
             a.append(arr[1])
@@ -146,6 +166,9 @@ class Brain:
             r.append(arr[4])
             s_.append(arr[5])
             s_mask.append(arr[6])
+
+
+
         # try:
         s = np.stack(s)
         a = np.vstack(a)
