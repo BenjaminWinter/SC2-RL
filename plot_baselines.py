@@ -10,8 +10,9 @@ def main():
     rewards = []
     fnum = 0
     total = len(glob.glob(os.path.join(args.dir, '*.json')))
-    cols = math.ceil((total + 2) // 2)
+    cols = math.ceil((total + 6) // 3)
     fig = plt.figure()
+    #plt.ylim(0,100)
     for fname in glob.glob(os.path.join(args.dir, '*.json')):
         with open(fname) as file:
             line = file.readline()
@@ -21,28 +22,40 @@ def main():
                 if 'r' in obj:
                     temp.append(float(obj['r']))
                 line = file.readline()
+            temp = temp[:500000]
             rewards.append(temp)
-            ax = fig.add_subplot(2,cols,fnum+1)
+            ax = fig.add_subplot(3,cols,fnum+1)
             print(fnum+1)
-            plt.plot(temp, label="Plot" + str(fnum))
+            plt.plot(temp, 'c',label="Plot" + str(fnum), alpha=0.3)
+
+            smoothed = smooth(np.array(temp), 5000, 'hanning')
+            plt.plot(smoothed, 'c', label="smoothed")
         fnum += 1
     minsize = min([len(x) for x in rewards])
     print(minsize)
     rewards = np.array([x[:minsize] for x in rewards])
+    highest = np.amax(rewards)
 
     max = np.amax(rewards, 0)
     mean = np.mean(rewards, 0)
+    mean_last = mean[-100:]
 
-    fig.add_subplot(2, cols, fnum+1)
-    plt.plot(max, 'r', label="Max")
+    print('Highest Overall Score: {}'.format(highest))
+    print('Average Score over last 1000 Episodes: {}'.format(np.average(mean_last)))
+
+    fig.add_subplot(3, cols, fnum+1)
+    plt.ylim(0, 45)
+    plt.plot(max, 'r', label="Max", alpha=0.3)
+    smoothed = smooth(max, 5000, 'flat')
+    plt.plot(smoothed, 'r', label="Max")
     fnum += 1
 
-    fig.add_subplot(2, cols, fnum+1)
-    plt.plot(mean, 'g', label="Mean", alpha=0.3)
+    fig.add_subplot(3, cols, fnum+1)
+    plt.ylim(0, 45)
+    plt.plot(mean, 'orange', label="Mean", alpha=0.3)
 
-    smoothed = smooth(mean, 5000, 'hanning')
-    #fig.add_subplot(2, cols, fnum+1)
-    plt.plot(smoothed, 'g', label="smooth")
+    smoothed = smooth(mean, 5000, 'flat')
+    plt.plot(smoothed, 'orange', label="smooth")
 
     plt.show()
 
