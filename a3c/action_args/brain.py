@@ -1,6 +1,6 @@
 import logging
 import multiprocessing as mp
-import time, random
+import time, random, math
 
 import tensorflow as tf
 from absl import flags
@@ -23,6 +23,8 @@ class Brain:
     rewards = []
     steps = []
     lock_queue = mp.Lock()
+    optimized = 0
+
     def __init__(self, s_space, a_space, none_state, saved_model=False, t_queue=None, replay_data=None):
         self.logger = logging.getLogger('sc2rl.' + __name__)
 
@@ -124,11 +126,14 @@ class Brain:
         s_ = []
         s_mask = []
 
-
         while not self.queue.empty():
+            self.lock_queue.acquire()
+            self.optimized += 1
+            self.lock_queue.release()
             arr = self.queue.get()
 
-            if self.replay_data is not None and random.random() < 0.05:
+            if self.replay_data is not None and random.random() < 0.10 * (1 - min(self.optimized/(FLAGS.run_time*30), 1)):
+                print('Adding replay data')
                 rnd = random.randint(0, len(self.replay_data))
                 temp = self.replay_data[rnd]
                 s.append(temp[0])
@@ -138,26 +143,26 @@ class Brain:
                 r.append(temp[4])
                 s_.append(temp[5])
                 s_mask.append(temp[6])
-                print('**************')
-                print('replay')
-                print(temp[0].shape)
-                print(temp[1].shape)
-                print(temp[2].shape)
-                print(temp[3].shape)
-                print(temp[4])
-                print(temp[5].shape)
-                print(temp[6])
-                print('**************')
-                print('**************')
-                print('actual')
-                print(arr[0].shape)
-                print(arr[1].shape)
-                print(arr[2].shape)
-                print(arr[3].shape)
-                print(arr[4])
-                print(arr[5].shape)
-                print(arr[6])
-                print('**************')
+                # print('**************')
+                # print('replay')
+                # print(temp[0].shape)
+                # print(temp[1].shape)
+                # print(temp[2].shape)
+                # print(temp[3].shape)
+                # print(temp[4])
+                # print(temp[5].shape)
+                # print(temp[6])
+                # print('**************')
+                # print('**************')
+                # print('actual')
+                # print(arr[0].shape)
+                # print(arr[1].shape)
+                # print(arr[2].shape)
+                # print(arr[3].shape)
+                # print(arr[4])
+                # print(arr[5].shape)
+                # print(arr[6])
+                # print('**************')
 
             s.append(arr[0])
             a.append(arr[1])
