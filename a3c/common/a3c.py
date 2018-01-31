@@ -1,5 +1,5 @@
 import logging
-import time, json
+import time, json, gzip
 import multiprocessing as mp
 from multiprocessing.managers import BaseManager
 
@@ -47,11 +47,12 @@ class A3c:
         self.none_state = np.zeros(s_space)
         self.none_state = self.none_state.reshape(s_space)
 
-        self.replay_data = []
-        if FLAGS.replay_file:
-            with open(FLAGS.replay_file, 'rb') as f:
+        self.replay_data = None
+        if FLAGS.replay_file and FLAGS.action_args:
+            with gzip.open(FLAGS.replay_file, 'rb') as f:
                 self.replay_data = pickle.load(f)
 
+                print(len(self.replay_data))
         self.manager = A3CManager()
         self.manager.start()
         self.q_manager = mp.Manager()
