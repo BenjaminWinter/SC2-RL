@@ -162,7 +162,10 @@ def get_obs(ids, obs):
     layers = []
     for id in ids:
         bytelayer = getattr(obs.observation.feature_layer_data.renders, FEATURE_IDS[id])
-        layer = np.frombuffer(bytelayer.data, dtype=TYPES[bytelayer.bits_per_pixel]).reshape((FLAGS.screen_resolution, FLAGS.screen_resolution))
+        if bytelayer.bits_per_pixel > 7:
+            layer = np.frombuffer(bytelayer.data, dtype=TYPES[bytelayer.bits_per_pixel]).reshape((FLAGS.screen_resolution, FLAGS.screen_resolution))
+        else :
+            layer = bits_to_array(bytelayer.data)
         layers.append(layer.reshape(layer.shape + (1,)))
 
     if len(ids) < 2:
@@ -178,5 +181,19 @@ def get_game_version(replay_data):
   version = metadata["GameVersion"]
   return ".".join(version.split(".")[:-1])
 
+
+def bits_to_array(bits):
+    ints = list(np.frombuffer(bits, dtype="u1"))
+    temp = []
+    for el in ints:
+        temp += bitfield(el)
+
+    return np.array(temp).reshape((FLAGS.screen_resolution, FLAGS.screen_resolution))
+
+def bitfield(n):
+    temp = [int(digit) for digit in bin(n)[2:]]
+    while len(temp) < 8:
+        temp = [0] + temp
+    return temp
 if __name__ == '__main__':
     app.run(main)
