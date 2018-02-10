@@ -100,7 +100,7 @@ class Brain:
         log_proby = tf.log(tf.reduce_sum(py * y_t, axis=1, keep_dims=True) + 1e-10)
         advantage = r_t - v
 
-        loss_policy = - log_prob * tf.stop_gradient(advantage) + 0.5 * log_probx + 0.5 * log_proby # maximize policy
+        loss_policy = - (log_prob + 0.5 * log_probx + 0.5 * log_proby) * tf.stop_gradient(advantage) # maximize policy
         loss_value = FLAGS.loss_v * tf.square(advantage)  # minimize value error
         entropy = FLAGS.loss_entropy * tf.reduce_sum(p * tf.log(p + 1e-10), axis=1,
                                                keep_dims=True)  + 0.5*tf.reduce_sum(px * tf.log(px + 1e-10), axis=1,
