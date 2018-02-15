@@ -134,7 +134,7 @@ class Brain:
 
             if self.replay_data is not None and random.random() < 0.10 * (1 - min(self.optimized/(FLAGS.run_time*30), 1)):
                 print('Adding replay data')
-                rnd = random.randint(0, len(self.replay_data))
+                rnd = random.randint(0, len(self.replay_data) -1)
                 temp = self.replay_data[rnd]
                 s.append(temp[0])
                 a.append(temp[1])
