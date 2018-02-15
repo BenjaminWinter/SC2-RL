@@ -1,6 +1,6 @@
 import logging
 import multiprocessing as mp
-import time
+import time, random, math
 
 import tensorflow as tf
 from absl import flags
@@ -9,27 +9,30 @@ from keras.layers import *
 from keras.models import *
 
 import a3c.common.shared as shared
+import json
 
 FLAGS = flags.FLAGS
 
 flags.DEFINE_float('loss_v', 0.5, 'v loss coefficient')
 flags.DEFINE_float('loss_entropy', 0.01, 'entropy coefficient')
-flags.DEFINE_float('lr', 5e-3, 'learning rate')
-flags.DEFINE_integer('min_batch', 32, 'batch Size')
-
+flags.DEFINE_float('lr', 5e-5, 'learning rate')
+flags.DEFINE_integer('min_batch', 16, 'batch Size')
 
 class Brain:
     episodes = 0
     rewards = []
     steps = []
     lock_queue = mp.Lock()
-    def __init__(self, s_space, a_space, none_state, saved_model=False, t_queue=None):
+    optimized = 0
+
+    def __init__(self, s_space, a_space, none_state, saved_model=False, t_queue=None, replay_data=None):
         self.logger = logging.getLogger('sc2rl.' + __name__)
 
         self.s_space = s_space
         self.a_space = a_space
         self.none_state = none_state
         self.queue = t_queue
+        self.replay_data = replay_data
 
         self.session = tf.Session()
         K.set_session(self.session)
@@ -97,7 +100,7 @@ class Brain:
         log_proby = tf.log(tf.reduce_sum(py * y_t, axis=1, keep_dims=True) + 1e-10)
         advantage = r_t - v
 
-        loss_policy = - log_prob * tf.stop_gradient(advantage) + 0.5 * log_probx + 0.5 * log_proby # maximize policy
+        loss_policy = - (log_prob + 0.5 * log_probx + 0.5 * log_proby) * tf.stop_gradient(advantage) # maximize policy
         loss_value = FLAGS.loss_v * tf.square(advantage)  # minimize value error
         entropy = FLAGS.loss_entropy * tf.reduce_sum(p * tf.log(p + 1e-10), axis=1,
                                                keep_dims=True)  + 0.5*tf.reduce_sum(px * tf.log(px + 1e-10), axis=1,
@@ -124,7 +127,42 @@ class Brain:
         s_mask = []
 
         while not self.queue.empty():
+            self.lock_queue.acquire()
+            self.optimized += 1
+            self.lock_queue.release()
             arr = self.queue.get()
+
+            if self.replay_data is not None and random.random() < 0.10 * (1 - min(self.optimized/(FLAGS.run_time*30), 1)):
+                print('Adding replay data')
+                rnd = random.randint(0, len(self.replay_data) -1)
+                temp = self.replay_data[rnd]
+                s.append(temp[0])
+                a.append(temp[1])
+                x.append(temp[2])
+                y.append(temp[3])
+                r.append(temp[4])
+                s_.append(temp[5])
+                s_mask.append(temp[6])
+                # print('**************')
+                # print('replay')
+                # print(temp[0].shape)
+                # print(temp[1].shape)
+                # print(temp[2].shape)
+                # print(temp[3].shape)
+                # print(temp[4])
+                # print(temp[5].shape)
+                # print(temp[6])
+                # print('**************')
+                # print('**************')
+                # print('actual')
+                # print(arr[0].shape)
+                # print(arr[1].shape)
+                # print(arr[2].shape)
+                # print(arr[3].shape)
+                # print(arr[4])
+                # print(arr[5].shape)
+                # print(arr[6])
+                # print('**************')
 
             s.append(arr[0])
             a.append(arr[1])
@@ -133,6 +171,9 @@ class Brain:
             r.append(arr[4])
             s_.append(arr[5])
             s_mask.append(arr[6])
+
+
+
         # try:
         s = np.stack(s)
         a = np.vstack(a)

@@ -23,6 +23,7 @@ import maps.scenarios as scenarios
 import sys
 
 FLAGS = flags.FLAGS
+flags.DEFINE_float("replay_amount", 0.02, "How many Replay Data points should be added to training samples")
 flags.DEFINE_bool("save_replay", True, "Whether to save a replay at the end.")
 flags.DEFINE_bool("render", False, "Whether to render with pygame.")
 flags.DEFINE_bool("profile", False, "Whether to turn on code profiling.")
@@ -47,6 +48,7 @@ flags.DEFINE_string("map", None, "Name of a map to use.")
 flags.DEFINE_string('algorithm', 'test.Test', 'Which Algorithm to run')
 flags.DEFINE_string('load_model', None, 'Keras model to load')
 flags.DEFINE_string('save_model', 'models/training_model', 'Where to save Keras model')
+flags.DEFINE_string('replay_file', '', 'File of converted replays for training augmentation')
 flags.mark_flag_as_required("map")
 
 

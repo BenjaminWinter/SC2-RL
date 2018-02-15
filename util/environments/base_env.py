@@ -65,7 +65,7 @@ class BaseEnv(gym.Env):
 
     def rebuild(self):
         self._env = sc2_env.SC2Env(
-                FLAGS.map,
+                map_name=FLAGS.map,
                 agent_race=FLAGS.agent_race,
                 bot_race=FLAGS.bot_race,
                 difficulty=FLAGS.difficulty,

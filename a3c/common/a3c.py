@@ -1,10 +1,11 @@
 import logging
-import time
-import random
+import time, json, gzip
 import multiprocessing as mp
 from multiprocessing.managers import BaseManager
 
 import matplotlib as mpl
+import pickle
+import sys
 mpl.use('Agg')
 
 import numpy as np
@@ -16,6 +17,8 @@ import a3c.common.shared as shared
 
 
 FLAGS = flags.FLAGS
+FLAGS(sys.argv)
+
 
 if FLAGS.action_args:
     from a3c.action_args.environment import Environment
@@ -44,12 +47,18 @@ class A3c:
         self.none_state = np.zeros(s_space)
         self.none_state = self.none_state.reshape(s_space)
 
+        self.replay_data = None
+        if FLAGS.replay_file and FLAGS.action_args:
+            with gzip.open(FLAGS.replay_file, 'rb') as f:
+                self.replay_data = pickle.load(f)
+
+                print(len(self.replay_data))
         self.manager = A3CManager()
         self.manager.start()
         self.q_manager = mp.Manager()
         self.queue = self.q_manager.Queue()
 
-        self.shared_brain = self.manager.Brain(s_space, a_space, self.none_state, t_queue=self.queue)
+        self.shared_brain = self.manager.Brain(s_space, a_space, self.none_state, t_queue=self.queue, replay_data=self.replay_data)
         self.stop_signal = mp.Value('i', 0)
 
         if not FLAGS.validate:

@@ -1,12 +1,7 @@
 import multiprocessing as mp
 from absl import flags
-<<<<<<< Updated upstream
 import time
-import logging
-=======
-import time, random
 import logging, os
->>>>>>> Stashed changes
 from .agent import Agent
 import util.helpers as helpers
 from baselines import bench
