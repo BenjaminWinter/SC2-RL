@@ -13,4 +13,5 @@ class SimProcEnv():
         obs = self._env.reset()
         return [obs]
     def close(self):
+        self._env.save_replay()
         return self._env.close()

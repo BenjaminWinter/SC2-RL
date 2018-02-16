@@ -82,3 +82,6 @@ class BaseEnv(gym.Env):
 
     def get_sc2_action(self, action):
         pass
+
+    def save_replay(self):
+        self._env.save_replay('./replays')
