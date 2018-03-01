@@ -16,6 +16,7 @@ FLAGS = flags.FLAGS
 flags.DEFINE_float('loss_v', 0.5, 'v loss coefficient')
 flags.DEFINE_float('loss_entropy', 0.01, 'entropy coefficient')
 flags.DEFINE_integer('min_batch', 16, 'batch Size')
+flags.DEFINE_bool('replaycontinuous', False, 'Wether Replays should be add in the continuous linear decay strategy')
 
 class Brain:
     episodes = 0
@@ -53,6 +54,16 @@ class Brain:
         self.default_graph = tf.get_default_graph()
 
         self.default_graph.finalize()  # avoid modifications
+
+        if not FLAGS.replaycontinuous and self.replay_data:
+            self.logger.info('Start Adding Replay Data Setup')
+            for x in range(10000 // FLAGS.min_batch):
+                for y in range(FLAGS.min_batch):
+                    self.queue.put(self.replay_data[random.randint(0, len(self.replay_data) -1)])
+
+                self.optimize()
+                self.logger.info('Optimizing Replay Setup...')
+        self.replay_data = None
 
     def _build_model(self):
 
@@ -114,6 +125,8 @@ class Brain:
         return s_t, a_t, x_t, y_t, r_t, minimize
 
     def optimize(self):
+
+
         if self.queue.qsize() < FLAGS.min_batch:
             time.sleep(FLAGS.thread_delay)  # yield
             return
@@ -127,11 +140,12 @@ class Brain:
 
         while not self.queue.empty():
             self.lock_queue.acquire()
+
             self.optimized += 1
             self.lock_queue.release()
             arr = self.queue.get()
 
-            if self.replay_data is not None and random.random() < 0.10 * (1 - min(self.optimized/(FLAGS.run_time*30), 1)):
+            if self.replay_data is not None and FLAGS.replaycontinuous and random.random() < 0.10 * (1 - min(self.optimized/(FLAGS.run_time*30), 1)):
                 print('Adding replay data')
                 rnd = random.randint(0, len(self.replay_data) -1)
                 temp = self.replay_data[rnd]
@@ -142,26 +156,6 @@ class Brain:
                 r.append(temp[4])
                 s_.append(temp[5])
                 s_mask.append(temp[6])
-                # print('**************')
-                # print('replay')
-                # print(temp[0].shape)
-                # print(temp[1].shape)
-                # print(temp[2].shape)
-                # print(temp[3].shape)
-                # print(temp[4])
-                # print(temp[5].shape)
-                # print(temp[6])
-                # print('**************')
-                # print('**************')
-                # print('actual')
-                # print(arr[0].shape)
-                # print(arr[1].shape)
-                # print(arr[2].shape)
-                # print(arr[3].shape)
-                # print(arr[4])
-                # print(arr[5].shape)
-                # print(arr[6])
-                # print('**************')
 
             s.append(arr[0])
             a.append(arr[1])
