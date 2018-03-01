@@ -15,7 +15,6 @@ FLAGS = flags.FLAGS
 
 flags.DEFINE_float('loss_v', 0.5, 'v loss coefficient')
 flags.DEFINE_float('loss_entropy', 0.01, 'entropy coefficient')
-flags.DEFINE_float('lr', 5e-5, 'learning rate')
 flags.DEFINE_integer('min_batch', 16, 'batch Size')
 
 class Brain:
@@ -101,11 +100,11 @@ class Brain:
         advantage = r_t - v
 
         loss_policy = - (log_prob + 0.5 * log_probx + 0.5 * log_proby) * tf.stop_gradient(advantage) # maximize policy
-        loss_value = FLAGS.loss_v * tf.square(advantage)  # minimize value error
-        entropy = FLAGS.loss_entropy * tf.reduce_sum(p * tf.log(p + 1e-10), axis=1,
+        loss_value = 2*FLAGS.loss_v * tf.square(advantage)  # minimize value error
+        entropy = FLAGS.loss_entropy * (tf.reduce_sum(p * tf.log(p + 1e-10), axis=1,
                                                keep_dims=True)  + 0.5*tf.reduce_sum(px * tf.log(px + 1e-10), axis=1,
                                                keep_dims=True) + 0.5*tf.reduce_sum(py * tf.log(py + 1e-10), axis=1,
-                                               keep_dims=True)# maximize entropy (regularization)
+                                               keep_dims=True))# maximize entropy (regularization)
 
         loss_total = tf.reduce_mean(loss_policy + loss_value + entropy)
 

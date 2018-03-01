@@ -22,7 +22,6 @@ def main():
                 if 'r' in obj:
                     temp.append(float(obj['r']))
                 line = file.readline()
-            temp = temp[:500000]
             rewards.append(temp)
             ax = fig.add_subplot(3,cols,fnum+1)
             print(fnum+1)
@@ -38,23 +37,25 @@ def main():
 
     max = np.amax(rewards, 0)
     mean = np.mean(rewards, 0)
-    mean_last = mean[-100:]
+    mean_last = mean[-1000:]
 
     print('Highest Overall Score: {}'.format(highest))
     print('Average Score over last 1000 Episodes: {}'.format(np.average(mean_last)))
 
     fig.add_subplot(3, cols, fnum+1)
-    plt.ylim(0, 45)
+    plt.ylim(-1, 50)
+    plt.xlim(0, 103000)
     plt.plot(max, 'r', label="Max", alpha=0.3)
-    smoothed = smooth(max, 5000, 'flat')
+    smoothed = smooth(max, 3000, 'flat')
     plt.plot(smoothed, 'r', label="Max")
     fnum += 1
 
     fig.add_subplot(3, cols, fnum+1)
-    plt.ylim(0, 45)
+    plt.ylim(-1, 50)
+    plt.xlim(0, 103000)
     plt.plot(mean, 'orange', label="Mean", alpha=0.3)
 
-    smoothed = smooth(mean, 5000, 'flat')
+    smoothed = smooth(mean, 3000, 'flat')
     plt.plot(smoothed, 'orange', label="smooth")
 
     plt.show()

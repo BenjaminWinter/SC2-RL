@@ -14,7 +14,6 @@ FLAGS = flags.FLAGS
 
 flags.DEFINE_float('loss_v', 0.5, 'v loss coefficient')
 flags.DEFINE_float('loss_entropy', 0.01, 'entropy coefficient')
-flags.DEFINE_float('lr', 5e-3, 'learning rate')
 flags.DEFINE_integer('min_batch', 32, 'batch Size')
 
 

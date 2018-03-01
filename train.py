@@ -24,6 +24,7 @@ import sys
 
 FLAGS = flags.FLAGS
 flags.DEFINE_float("replay_amount", 0.02, "How many Replay Data points should be added to training samples")
+flags.DEFINE_float('lr', 5e-3, 'learning rate')
 flags.DEFINE_bool("save_replay", True, "Whether to save a replay at the end.")
 flags.DEFINE_bool("render", False, "Whether to render with pygame.")
 flags.DEFINE_bool("profile", False, "Whether to turn on code profiling.")

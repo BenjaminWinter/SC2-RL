@@ -53,7 +53,7 @@ class A2c:
             policy_fn = LstmPolicy
         elif policy == 'lnlstm':
             policy_fn = LnLstmPolicy
-        self.learn(policy_fn, env, seed, total_timesteps=num_frames, lrschedule=lrschedule, nsteps=(1 if FLAGS.render else 5))
+        self.learn(policy_fn, env, seed, total_timesteps=num_frames, lrschedule=lrschedule, nsteps=(1 if FLAGS.render else 5), lr=FLAGS.lr)
         env.close()
 
     def learn(self, policy, env, seed, nsteps=5, nstack=4, total_timesteps=int(80e6), vf_coef=0.5, ent_coef=0.01,
