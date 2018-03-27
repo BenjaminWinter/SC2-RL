@@ -1,0 +1,761 @@
+% Chapter 1
+
+\chapter{Project} % Main chapter title
+
+\label{chap_prac} % For referencing the chapter elsewhere, use \ref{Chapter1}
+
+%----------------------------------------------------------------------------------------
+
+This chapter will discuss the accompanying project to this thesis in it's entirety. First, section \ref{sec:idea} will describe again the general idea of this project, and section \ref{sec:fworks} will list some of the external tools that were used to implement this project. Afterwards section \ref{sec:mapedit} will cover how the test scenarios for this project were build and some of the tools of the StarCraft II Map editor that are available for this task.
+Then, section \ref{sec:scenarios} will go into detail about the specific scenarios that were tested, and the strategies that were expected to be learned. Next, the overall architecture of the project and some of the general modules are depicted in section \ref{sec:rlfwork}. The following sections \ref{sec:ac3impl} and \ref{sec:baselinesproj} will detail how the A3c algorithm and the Open AI Baselines algorithms (ACKTR, A2C) respectively are implemented. Section \ref{sec:polmodel} will then describe the neural network architecture, that has been used for large parts of this project. The reinforcement learning algorithms implemented were further modified and extended in order to perform better in the StarCraft II environment and these extensions are detailed in section \ref{sec:extensions}. Finally, section \ref{sec:challenges} will cover some of the challenges encountered over the course of this thesis.
+
+
+\section{Idea and Goals}
+\label{sec:idea}
+The idea of this project is to explore the relatively recent and as yet very unexplored StarCraft II Machine Learning Environment for the testing of Reinforcement Learning algorithms. The PySC2 Framework, a python layer on top of StarCraft II's C++ API, in particular, is the basis for this exploration. In order to examine StarCraft II as a reinforcement learning environment in its entirety, all different components were inspected. This includes the creation of test scenarios through the use of the StarCraft II Galaxy Map Editor, the integration and interfacing of PySC2 with industry standard reinforcement learning algorithms and an evaluation as to how well current rl algorithms are able to work with StarCraft II and whether they are able to learn meaningful policies in small (combat) scenarios that reflect the actual main game mode of competitive 1v1 as closely as possible.
+
+Additionally a goal was to create tools and components over the course of this thesis, that are not only useful in this project, but can further be used and extended by other people working on reinforcement learning in StarCraft II. Most notably this means the environment wrappers, that have been developed for easier scenario definition, finer tuning of it's parameters and difficulty, and more straightforward interfacing of PySC2 with various algorithms. These tools and test scenarios were tested both with a custom implementation of the A3C algorithm and with two of the algorithms provided in the OpenAI Baselines Repository.
+
+\section{Frameworks and external Software}
+\label{sec:fworks}
+This project was built on the basis of a number of different frameworks, libraries and external software which are introduced in this section.
+
+To run the StarCraft II environment an actual StarCraft II Client is necessary. Windows and OS X users need to use the same client that one would also use to play this game normally, which requires a full download and installation. For Linux specifically a headless StarCraft II client was developed, which does not allow you to play the game normally, but is only a few gigabytes in size. More importantly, in contrast to the "real" clients of Windows and OS X, the headless build  does not need to render the game world to the screen in each frame of the game, making the headless build run two to three times faster in my tests.
+
+In addition to the StarCraft II client, the official StarCraft II Map Editor was used to create the test scenarios for this project. The map editor is introduced in more detail in section \ref{sec:mapedit}.
+
+As a framework to interface with the StarCraft II client the PySC2 python framework is used, which was already introduced in Chapter \ref{chap_api}.
+
+For the machine learning code in this project a combination of Tensorflow and Keras is employed.
+Keras makes it very easy and intuitive to define neural network and specifically cnn models, and Tensorflow handles the optimization and other training steps. As Keras can utilize Tensorflow as a backend, those two libraries work in tandem without a problem.
+
+As already mentioned, in addition to the A3C implementation, some of the OpenAI Baselines algorithms were adapted for this project in order to test them on the StarCraft II Environment. The OpenAI Baselines project features 8 high-quality and performance optimized reinforcement learning algorithms, that were implemented by the OpenAI team in order to help the research community to develop and test new ideas regarding reinforcement learning. Out of these, two were picked in particular, A2C and ACKTR.
+
+For the implementation of the environment wrappers detailed in section \ref{sec:wrappers} the OpenAI Gym Toolkit was used. The OpenAI Gym is a general purpose toolkit for evaluating reinforcement learning algorithms. It provides not only a set of pre-built environments with a common, easy to use API, it also provides the means to create new environments that feature the same API.
+Not the gym environments themselves were used in this project, but the environment wrappers implement some of the gym classes or interfaces, in order to recreate their interfaces.
+
+For deployment and external library management multiple strategies were used over the course of this project.
+For local development purposes a native pip environment was used, on the test machines in the university an anaconda environment was used, and for maximum portability and for training on the GPU cluster of the university a docker image was created as described in section \ref{sec:docker}.
+
+\section{Starcraft II Map Creation}
+
+\label{sec:mapedit}
+The PySC2 Framework is not restricted to special RL maps or Scenarios and runs the same with any
+.sc2map file. This means one can use the full capabilities of the very powerful SC2 Map Editor in order to create the environments, or even train agents on the already existing standard maps. In the following sections some of the tools available in the map editor will be described and how they were used to create the RL Scenarios in this project.
+\subsection{General Tools}
+\begin{figure}[htb]
+
+  \centering
+      \includegraphics[width=1\textwidth]{Figures/Editor_bordered.png}
+  \caption{The StarCraft II Map Editor User Interface}
+  \label{fig:editor-general}
+\end{figure}
+Figure \ref{fig:editor-general} shows the user interface upon opening the StarCraft II Map Editor.
+The cyan bordered window is the main view, that controls very similar to a 3D modelling program. It shows the entire map with a camera that can be moved and rotated, and additional information depending on the active view type chosen with the buttons bordered in orange. There are different layers available for viewing and manipulating different components like terrain, textures, units, scenery, or, active in the screenshot, game regions. Bordered with red is the minimap view of the map that gives a full 2D representation of the map, and bordered in purple are the available options for the active tool. Most tools work similar to a 2D Brush with which the surface of the map is painted.
+
+
+\subsection{Triggers}
+\begin{figure}[htb]
+  \centering
+      \includegraphics[width=1\textwidth]{Figures/Triggers_bordered.png}
+  \caption{The StarCraft II Map Editor Trigger Module Interface: 1 - Overview of all Map Triggers and Global Variables, 2 - Trigger blocks of currently viewed trigger, 3 - Options of currently selected trigger block}
+\end{figure}
+The "Triggers" Module of the StarCraft II Map Editor is where the actual game logic of the map is created. It functions similar to a programming language, and many familiar concepts like for and while loops and conditionals can be found in this module, but instead of writing actual code, triggers work with predefined elements and functions that can simply be plugged into each other. There is also the option to write custom code using the galaxy code scripting language, but as the predefined functions available are very extensive this was not necessary in this project.
+
+Trigger blocks can be divided into three main categories: Events, Conditions, and Actions.
+Events are what causes a trigger to run. Some examples are "If any unit dies" or a periodic event like "Every x in-game seconds". Conditions are the familiar if, for, while etc. statements that handle control flow in a trigger, and actions are all other, regular statements.
+
+Each trigger inherently has four categories to place trigger blocks in. Events, Local variables, Conditions and Actions. Only the Events category is strictly required to have one or multiple elements placed in it, and these decide, when the trigger is activated. The Conditional category only accepts trigger blocks of type condition. These conditions are tested when one or more events in the Events category fire to further determine whether to run this trigger. The Action category then holds all Trigger blocks, that are run in order after all conditions in the conditional category are met. The Local Variables category simply allows the creation and initialization of private variables that will only be accessible inside of this trigger.
+
+\subsubsection{Galaxy Code and Trigger Debugging}
+Before execution all trigger blocks are converted into StarCraft II's own scripting language Galaxy Code. The StarCraft II Map Editor also comes with a comprehensive debugging suite, that deals with Galaxy Code directly, and not with triggers. As the translation of trigger blocks into Galaxy Code is not always straightforward and there is substantial amounts of boilerplate code for every map, debugging can be considerable more challenging than the actual trigger blocks might indicate.
+
+
+\subsubsection{Example Trigger Code}
+While each scenario requires somewhat unique triggers, there is considerable overlap in the basic setup. This section will go through one example of all the triggers necessary for such a scenario with pointers to some of the differences between the scenarios.
+
+The first Trigger that is common between all scenarios is the Init Trigger, that is automatically run after the map is first initialized.
+It starts off with a group of trigger blocks that set up the camera and the playable space of the map. Since these scenarios feature only a small play area of a single screen, the playable area is restricted to this region. Doing that prevents units from moving outside of this region, and commands that are targeted outside this region are instead targeted to the closest point within this region.
+
+Next, the camera of player 1, which will be controlled by the algorithm, is centered on this area and then locked in place, to make sure the player/algorithm can instantly begin the scenario without the need for screen panning, and cannot accidentally pan the screen during play. Lastly, the fog of war is removed to ensure visibility of the entire area, even uphill and if friendly units would not ordinarily give vision.
+
+\begin{figure}[htb]
+  \centering
+      \includegraphics[width=1\textwidth]{Figures/Triggers/trigger_init_scenario.png}
+  \caption{ Init Trigger: Camera and Play area setup }
+\end{figure}
+
+The next group of blocks inside the Init trigger sets up the units and upgrades needed for the specific scenario. This is substantially different for each scenario. This example uses two spawn regions, Left and Right which either spawn enemy or friendly units. Which region spawns which type of unit is chosen at random. This is done in order to give the environment some more randomness.
+
+\begin{figure}[htb]
+  \centering
+      \includegraphics[width=1\textwidth]{Figures/Triggers/trigger_init_units.png}
+  \caption{ Init Trigger: spawning of units }
+\end{figure}
+
+A different approach is chosen for example by the Reapers vs Zergling scenario. In that scenario no specific spawn regions are set, and instead all units of a group are spawned on a single point taken randomly from an area roughly the size of the playable area. Before spawning, it is ensured, that the two spawn points are not too close together, as that would interfere with the scenario.
+
+The last part of the Init Trigger then sets the score, objective and an episode timer, that determines when the episode automatically ends. An episode timer is incorporated even in scenarios that are not time based simply in order to set a maximum episode length and prevent infinitely long episodes.
+
+\begin{figure}[htb]
+  \centering
+      \includegraphics[width=1\textwidth]{Figures/Triggers/trigger_init_timer.png}
+  \caption{ Init Trigger: Score variable and Episode Timer }
+\end{figure}
+
+The next trigger that is common between all scenarios is the Victory Trigger, that is responsible
+for updating the score and checking whether a victory condition is met. This trigger usually activates using the "Any Unit dies" Event. A conditional then tests, what player the dying unit belonged to and, if multiple unit types are used for this scenario, which unit type it is. After that is determined the score is updated accordingly.
+
+\begin{figure}[htb]
+  \centering
+      \includegraphics[width=1\textwidth]{Figures/Triggers/trigger_score_update.png}
+  \caption{ Victory Trigger: Updating the score }
+\end{figure}
+
+The second part of the trigger then uses a conditional to check whether victory has been achieved yet. Most of the time that is the case if all enemy units have been defeated. Is Victory achieved, this trigger effectively pauses the game by stopping all active triggers, timers, units and the mission time. Additionally the objectives are set to completed, which signals pysc2 that an episode is completed and "reset" should be written to chat to activate the Reset Trigger, which resets the environment for a new episode. Depending on the scenario the defeat is handled either with a very similar trigger to that of the victory trigger or, in simple cases as a subconditional inside of the victory trigger.
+
+\begin{figure}[htb]
+  \centering
+      \includegraphics[width=0.8\textwidth]{Figures/Triggers/trigger_score_victory.png}
+  \caption{ Victory Trigger: Checking the victory condition }
+\end{figure}
+
+The Reset trigger first of all stops all episode relevant timers and triggers. Although this should have already be done by victory or defeat triggers, this is repeated here. This is mainly for mid-episode resets, for example for debugging purposes. Additionally, all units are entirely removed from the game.
+
+\begin{figure}[htb]
+  \centering
+      \includegraphics[width=1\textwidth]{Figures/Triggers/trigger_reset_stopall.png}
+  \caption{ Reset Trigger: Checking the victory condition }
+\end{figure}
+
+After that follows the resetting of all global variables used during the episode and the re spawning of units.
+Unfortunately there is no easy way to simplify this. Therefore the code is very similar to the code used in the Init Trigger. Unit upgrades do not have to be reapplied here, as they are valid until the map is fully closed.
+
+\begin{figure}[htb]
+  \centering
+      \includegraphics[width=0.8\textwidth]{Figures/Triggers/trigger_reset_resetvars.png}
+  \caption{ Reset Trigger: Resetting variables }
+\end{figure}
+
+Lastly, the reset trigger re activates all triggers and timers needed for the episode and if applicable gives orders to the units that will not be controlled by player 1.
+
+\begin{figure}[htb]
+  \centering
+      \includegraphics[width=0.8\textwidth]{Figures/Triggers/trigger_reset_turnon.png}
+  \caption{ Reset Trigger: reactivating triggers }
+\end{figure}
+
+The last trigger that all scenarios share is the Restart trigger. This is a very simple trigger only needed for debugging, or when the maximum number of steps allowed for a map is reached during training. A maximum number of steps is enforced mainly to prevent memory problems.
+It simply reinitialises the map, which effectively restarts the entire environment. 
+This reinitialization is very slow however, and should therefore not be used in place of the reset trigger, and only if necessary.
+After reloading the map the Init Trigger is executed again, and the scenario starts fresh.
+
+\begin{figure}[htb]
+  \centering
+      \includegraphics[width=0.6\textwidth]{Figures/Triggers/trigger_reset_full.png}
+  \caption{ Restart Trigger }
+\end{figure}
+
+
+
+\subsection{Altering Game Data}
+The "Game Data" Module allows the adjustment of many different game variables. Here one can change unit and building properties, terrain characteristics and even parameters of the unit behavioural AI. In this project this module was mainly used as a means to tune the difficulty of a scenario. For the "Find Ultralisk" and "Find Ultralisk With Creep" in particular it was important to keep them as easy as possible while still maintaining an interesting challenge.
+To that effect multiple variables of the friendly unit were altered:
+\begin{itemize}
+\item Movement Speed - The Movement Speed was slightly increased in order to decrease the amount of steps needed towards the enemy unit.
+\item Weapon Range - To counteract the previous change somewhat the range was decreased. This means that while it overall takes less steps to reach the target, it has to be reached more accurately.
+\item AI Target Leash Acquiring Range + AI Target Leash Reaquiring Range - Both of these variables relate to the unit AI that every unit has built into it, regardless of whether it is controlled by a human or AI. The unit AI handles mostly pathfinding and one of the features of this unit AI is that if a unit is close to but not in range of an enemy unit it will "leash" to it. meaning that it will automatically move to attack it and all further attack move commands that do not target a specific unit will be voided. While useful in the normal game this feature would heavily distort the outcomes of the tests. For that reason these two ranges were set to 0 effectively disabling this feature.
+\end{itemize}
+
+\subsection{RL Specific}
+For a map to be properly usable with PySC2 there are a few behaviours that have to be implemented.
+The first one is the reward system. Without it, the only reward available in PySC2 is either a 1 or a 0 depending on whether the agent won or lost the game. Giving more nuanced rewards during an episode is done by manipulating the cumulative score. In StarCraft II's multi-player the cumulative score is a loose indicator of how well a player did, aggregating points for gathered and spent resources, army value etc.. Using the map editor however it can be arbitrarily set using triggers, allowing for various reward policies to be implemented. This cumulative score is send directly to the PySC2 environment with each step as the reward.
+
+The second behaviour is the reset and restart handling. Resets are supposed to happen after each episode and revert the environment back to the state at the start. PySC2 sends the reset signal by having the agent type "reset" in the in-game chat. An event trigger has to listen to this in-game message and by hand reset each part of the environment. Similarly the restart signal is sent by typing "restart". 
+
+\section{Scenarios}
+\label{sec:scenarios}
+Instead of using the "Mini Games" provided with PySC2 I wanted to build my own scenarios, both to build scenarios that are more in line with the specific topic of this thesis and more importantly to have more control over what exactly the challenges in the scenarios are.
+Furthermore, most of these "Mini Games" are very artificially constructed and only have a very peripheral relation to the actual game of StarCraft II. While some of the scenarios in this project are abstract as well, three scenarios were created, that reflect actual combat scenarios that occur very frequently in competitive play.
+
+What all of these scenarios have in common, is that they use an arena style map that is at most as big as one screen's field of view. This eliminates the need for screen panning, which would add an enormous amount of complexity to the scenarios.
+Also, all of these scenarios pit the reinforcement learning agent against either a static environment, with hard coded enemy unit behaviour, or the built in AI.
+The next sections will give a brief description of each scenario and what the agent was expected to learn from the environment. Also there are videos on the accompanying usb drive of each scenario being solved by one of the reinforcement learning algorithms, and also by a human should their strategies differ greatly. The strategies depicted in these videos are further discussed in chapter \ref{chap_eval}
+
+\subsection{Find Ultralisk}
+\begin{figure}[htb]
+  \centering
+      \includegraphics[width=0.8\textwidth]{Figures/FindUltralisk.png}
+  \caption{PYSC2 debugging view(top) and ingame view(bottom) of the FindUltralisk Scenario. Important Feature Layer: screen\_player\_relative }
+\end{figure}
+The Find Ultralisk scenario can be considered a "Hello World" scenario. It was created with the intention of being as easy as possible. As a result, this scenario is mainly used to verify whether a reinforcement learning algorithm actually works. Essentially it is very similar to the "MoveToBeacon" Mini Game, that is provided with PySC2, but is a combat scenario variant of it. This scenario features one ranged unit controlled by the RL agent, one static enemy melee unit and an otherwise empty map. The Ultralisk was chosen as the enemy unit, as it is very big, and should therefore be especially easy to detect for the CNN.
+
+Both units get spawned at random positions within the arena which are at least 7 units of distance apart from each other at the start of each episode.
+The objective for the agent is to move it's unit in range to the Ultralisk and attack it. After one attack the Ultralisk dies which awards the Agent with 1 reward score.
+After that, a new Ultralisk instantly spawns at a random point, again at least a distance of 7 away from the current position of the agents unit. This continues, until the scenario ends after 240 timesteps. Thus, the faster the agent manages to kill the Ultralisks, by moving towards them in the most direct and efficient way possible, the higher the episodic reward.
+
+Using the environment wrappers depicted in section \ref{sec:wrappers}, two versions of this scenario were created. The simplified version makes use of only four actions for moving the unit up, down, left, or right. The environment wrapper then translates these actions into an attack\_screen action with screen coordinates that are shifted a distance of 5 from the current unit position in the respective directions.
+In order to get by with only these four actions the unit has to be preselected in each episode, which is done through the map editor.
+The advanced version directly uses the attack\_screen command with screen coordinates chosen by the neural net, and for additional complexity the no\_op command, which simply does nothing, and the select\_army command, selecting all units a player owns.
+
+\subsection{Find Ultralisk With Creep} 
+\begin{figure}[htb]
+  \centering
+      \includegraphics[width=0.8\textwidth]{Figures/FindUltraliskWithCreep.png}
+  \caption{PYSC2 debugging view(top) and ingame view(bottom) of the Find Ultralisk With Creep Scenario. Important Feature Layers: screenplayer\_relative, screencreep }
+\end{figure}
+
+This scenario is a modification of the "Find Ultralisk" scenario described in the last section. Everything stays largely the same the only addition being "creep" surfaces. These surfaces are spread randomly across the arena and do not change locations until an episode is over. While largely harmless in the real StarCraft II game, in this Scenario these surfaces instantly kill the agents unit if it steps on them. This immediately ends the current episode and deducts 1 reward point. Accordingly the agents primary priority should be to stay alive, with actually killing Ultralisks and gaining rewards becoming only the second priority. This scenario also has the same simplified and more challenging variants as the Find Ultralisk scenario.
+
+\subsection{Blink Stalkers vs Roaches}
+\begin{figure}[htb]
+  \centering
+      \includegraphics[width=0.8\textwidth]{Figures/StalkersRoaches.png}
+  \caption{PYSC2 debugging view(top) and ingame view(bottom) of the Blink Stalkers vs Roaches Scenario. Important Feature Layers: screenplayer\_relative, screenselected, screenunit\_hit\_points, screenunit\_hit\_points\_ratio }
+\end{figure}
+
+"Blink Stalkers vs Roaches" is the first scenario that is taken directly from the competitive 1vs1 mode of StarCraft II. In this scenario two similar, but imbalanced armies fight each other. The army that will be controlled by StarCraft II's builtin AI contains 10 Roaches, a Roach being a basic ranged unit. The army controlled by the RL algorithm contains 8 Stalkers, a similar ranged unit that has slightly longer range and also has a "Blink" ability unlockable via research.
+This scenario arises quite often in Protoss vs Zerg match-ups, as Roaches and Stalkers are 2 of the most integral units of their respective races.
+
+"Blink" is an ability that allows a Stalker to instantly teleport to a location nearby. Using the "Blink" ability a Stalker army can become much more efficient. The strategy that works best is to always teleport Stalkers that only have little health left to the back of your army. If done correctly, the teleported Stalker should still be close enough to the enemy that it walks back into the fight on its own, but far enough away, that enemy units no longer attack it. Because the built in AI does not intentionally focus on low health enemies, teleported Stalkers can stay much longer in the fight even though they are close to being destroyed. The numbers of units for both sides were chosen such that if the RL algorithm does not learn this strategy it will lose the battle every time, and if it executes this strategy perfectly it should win every time without losing any Stalkers of its own.
+
+For this scenario there is an immediate reward of 1 point every time an enemy Stalker dies, and also an additional end of episode reward of 2 for each Stalker belonging to the RL algorithm that is still alive.
+
+The feature layers used for this scenario are player\_relative, selected, and hit\_points.
+Available as actions are the "Blink" action and the "Select Point" action, both requiring screen coordinates as parameters. For this scenario there is no easy variant.
+
+\subsection{Gateway Army vs Zerglings}
+\begin{figure}[htb]
+  \centering
+      \includegraphics[width=0.8\textwidth]{Figures/GatewayZerg2.png}
+  \caption{PYSC2 debugging view(top) and ingame view(bottom) of the Gateway vs Zerg Scenario during the fight, after some Forcefields and Guardian Shields were used. Forcefields show up as neutral units and can be seen influencing the battlefield, while Guardian Shields can not be seen any of the input layers, which is either a Bug or missing feature and makes their use by the AI questionable. }
+\end{figure}
+
+This scenario is again a very common combat scenario from the competitive mode of StarCraft II.
+It pits a standard Protoss Gateway army consisting of Zealots, Stalkers, Sentries and Adepts controlled by the RL algorithm against a tier 1 Zerg army of Zerglings and Roaches. 
+
+The most important unit for this scenario is the sentry. It has two abilities: Forcefield and Guardian Shield. Forcefield is an ability that costs 50 energy of the Sentry's 200 maximum energy to create a forcefield on a specified location that lasts for 11 seconds and that both enemy and friendly units can not pass through. Using multiple Forcefields it is possible to effectively cut the enemy army in half, so that you can fight them separately, which is much easier and more effective. Guardian Shield costs 75 mana and constructs a shield around the sentry and nearby units that reduces all incoming ranged damage by two. Management of those two abilities is paramount to the success in this Scenario.
+
+As input layers player\_relative, hit\_points, and unit\_type were used. The actions for this scenario are attack\_screen, forcefield, which both require screen coordinates and also guardian\_shield.
+
+
+\subsection{Reapers vs Zerglings}
+\begin{figure}[htb]
+  \centering
+      \includegraphics[width=0.8\textwidth]{Figures/Reapers_zergling.png}
+  \caption{PYSC2 debugging view(top) and in game view(bottom) of the Reapers vs Zerglings Scenario }
+\end{figure}
+This scenario features a small version of a very popular opening in the Terran vs Zerg matchup.
+It is also the first scenario to feature terrain with different levels of height, that the algorithm can use to it's advantage. The Reaper is a very unique ranged unit with the passive jetpack ability, that allows it to jump up and down cliffs. Zerglings being a melee unit cannot attack enemies above or below them so their only option to get to and attack the agents units is to use the ramps that connect the different levels of height in the terrain.
+
+The input layers for this scenario are player\_relative, hit\_points and height\_map. The actions are move\_screen and attack\_screen both requiring screen coordinates as parameters. For this scenario there is an easy variant, that uses only eight actions: four variants for the directions up, left, right and down for each of the 2 actions.
+
+
+\subsection{Failed Attempt: Vulture vs. Firebats}
+\label{sec:failed}
+The first attempt at a reinforcement learning scenario was to recreate a similar scenario as in the paper \citep{broodwarRL}.
+In this scenario the RL algorithm controls a single fast moving ranged unit which fights a group of slower moving and lower range or melee units. The best strategy here is to kite the enemy group by shooting and fleeing in an alternating manner. This keeps the agents unit out of the range of the enemy units and with ideal execution it is possible to defeat all enemies without ever getting hit.
+
+Like in the aforementioned paper this was supposed to be solved in a very simplified manner using only two actions, attacking and fleeing. These actions were implemented much more simplistically however. In this project the attack action simply executes an attack move command on the coordinates of the closest enemy, while the fleeing action calculates a vector that is opposite to the attack vector. Should the escape vector lie outside of the playable area it is rotated until it is fully inside. The programming of these two actions was kept intentionally very simple, because they have to be calculated in every step. This sacrifices some accuracy in favour of faster computation and training. Nevertheless this was one of the major problems with this scenario. The hard coded actions simply were either too slow or too inaccurate to be suitable for training with. The other problem was, that it is not possible to determine the state (moving, attacking, etc.) of a single unit at any given time using the StarCraft II API. For the kiting strategy required in this scenario, this would be invaluable information. \citep{broodwarRL} alleviated this challenge somewhat by setting the time between agent steps to how long one attack action would take. 
+
+While also possible in this project it was felt, that all scenarios should share as much common ground as possible and this was too arbitrary of a modification to make and would not necessarily give valuable comparisons to other scenarios. Because this Scenario was supposed to be the easiest, and entry scenario for this project and these challenges presented themselves as non-trivial this scenario was ultimately abandoned and replaced by the much simpler and straightfoward Find Ultralisk scenario.   
+
+\subsection{Summary}
+\begin{landscape}
+\begin{table}[htb]
+\centering
+%\resizebox{\textwidth}{!}{%
+\begin{tabular}{p{2cm}p{3cm}p{3cm}p{3cm}p{2cm}p{1.5cm}p{1.5cm}p{2cm}p{2cm}}
+%\begin{tabular}{@{}lllllllll@{}}
+\toprule
+Scenario               & Available Actions                                                         & Available Actions (Simplified) & State Layers                                                                             & Estimated Difficulty (0 - 10) & Min Reward  & Max Reward & Novice Human score & Expert Human score \\ \midrule
+Find Ultralisk          & 7056 (Move\_Screen)                                                       & 4 (Up, Down, Left, Right)     & 1 (Player\_Relative)                                                                     & 0           & 0           & $\sim$50   & 45                     & 48                       \\  \addlinespace[0.35em]
+Find Ultralisk With Creep & 7056 (Move\_Screen)                                                       & 4 (Up, Down, Left, Right)     & 2 (Player\_Relative, Terrain\_Creep)                                                     & 3     & 0           & $\sim$45   & 37                     & 42                       \\ \addlinespace[0.35em]
+Reapers Zerglings       & 14112 (Move\_Screen, Attack\_Screen) + 2 (No\_op, Select\_Army)           & 8 (Attack UDLR, Move UDLR)    & 3 (Player\_Relative, Unit\_Health, Height\_Map)                                          & 6         & 0           & 19         & 17.5                   & 19                       \\ \addlinespace[0.35em]
+Gateway Zerg            & 14112 (Forcefield\_Screen, Attack\_Screen) + 2 (No\_op, Guardian\_Shield) &                               & 6 (Player\_Relative, Hit\_Points, Hit\_Points\_Ratio, Unit\_Type, Energy, Energy\_Ratio) & 7            & $\sim$42(0) & 120        & 63                     & 99                       \\ \addlinespace[0.35em]
+Stalkers Roaches        & 14112 (Blink\_Screen, Attack\_Screen) + 1 (No\_op)                        &                               & 5 (Player\_Relative, Hit\_Points, Selected, Unit\_Type, Hit\_Points\_Ratio)              & 10       & -10         & 100        & 60                     & 90                       \\ \bottomrule
+\end{tabular}%
+%}
+\caption{Summary of key data points comparing the different scenarios}
+\label{table:scen_summ}
+\end{table}
+\end{landscape}
+
+This table \ref{table:scen_summ} gives a summary and comparison of some of the key data pertaining to all the scenarios previously discussed. The numbers in the available actions column assume a vertical and horizontal feature layer resolution of 84 pixels. The minimum and maximum rewards for a scenario can not be determined accurately in all cases. For the Find Ultralisk and Find Ultralisk With Creep scenarios for example, the maximum reward is somewhat dependent on the randomness of the spawns especially on the placement of creep patches which in rare cases restrict rewards almost entirely. Even in normal cases a deviation of ~3 points is likely for these two scenarios. 
+
+For the Gateway vs Zerg scenario 0 and 120 are only theoretically the lowest and highest rewards resulting from killing no enemy units at all and eliminating all enemy units without losing a single unit respectively. Both of these are likely not actually achievable in game though. 42 is given as a secondary minimum reward for this scenario, as this is the lowest reward I was able to achieve when trying to purposefully sabotaging the win. 
+
+The human baselines are average reward values over five runs with 1 practice run beforehand of one player, who has barely played StarCraft II at all (Novice) and a Master-ranked 1v1 player (Advanced), Master rank being the second highest rank after grandmaster and containing the 2\% best players of each continent. As these scenarios are simple enough, that even a novice player should be able to earn very high scores with a little practise these baselines were recorded only on a very sample size of the first few tries that the respective players had on these scenarios. 
+
+\section{RL Framework}
+\label{sec:rlfwork}
+The following sections will discuss the general architecture of this project, how to run this project and all modules not directly pertaining to one of the reinforcement learning algorithms. Figure \ref{fig:proj} illustrates the project's architecture.
+The train module handles the general setup and start of the reinforcement learning algorithms, the util module contains the helper module and the environment wrappers, that interface between the PySC2 environment and the reinforcement learning algorithms and the plot\_baselines module is a standalone module used for plotting the results of the training runs. There is also the semi standalone scenarios module, that is required by PySC2 to load the actual .sc2map files.
+
+
+\begin{figure}[htb]
+  \centering
+      \includegraphics[width=1\textwidth]{Figures/Project_Overview.pdf}
+  \caption{ Overview of the Project Architecture and module structure. The Train and plot\_baselines modules are the entry points for this project, with the train module starting one of the currently three available algorithms A3C, A2C and ACKTR and using one of the environment wrappers provided by the util.environments module}
+  \label{fig:proj}
+\end{figure}
+
+
+
+\subsection{Setup}
+
+The setup needed in order to run this project varies considerably depending on which method of providing the necessary dependencies is used. In all cases one needs to install one of the StarCraft II Clients available either on the Blizzard website for Mac/Windows builds, or the StarCraft II maschine learning API github repository for the linux client. PySC2 expects SC2 to be installed either in the home directory of the user or a custom location can be specified with the SC2PATH environment variable. 
+
+If the tensorflow/keras code is desired to be executed on the GPU, which is highly recommended, one also needs to install current graphics drivers, the CUDA library and CUDNN. These can be supplied from either the systems' package manager or install files, or by anaconda. In the docker image they are already installed. Lastly, the python module dependencies are needed, all but one of which can be supplied by the python package manager pip.
+
+The only non-pip module required is the OpenAI Baselines module available on Github. One thing to note is that at the time of writing the installation script provided with the baselines module breaks existing tensorflow-gpu installations and replaces them with the CPU only version. For this reason it is necessary to reinstall tensorflow-gpu afterwards. Finally, the .sc2map files located in the Maps folder of this project need to be copied into the \lstinline{Maps/rl_scenarios} directory of the StarCraft II installation.
+
+
+\subsubsection{Docker}
+\label{sec:docker}
+In order to deploy and run this project on different machines as easily as possible a docker image was created. This became necessary in particular for running the project on the Datexis GPU cluster of the university, as the required libraries to build some of the python modules were not available on the fedora machine.
+
+The Docker image is based on the tensorflow-gpu image, which in turn is based on one of the nvidia-docker images. On top of this tensorflow image installed are some additional programs like git and pip, and the required python modules. In addition the cudnn version was updated to version 6. In order to keep the image as small and portable as possible, the StarCraft II Client and the projects git repository are not included in the docker image and have to be downloaded separately.
+
+Actually running this docker image involves first starting it as a daemon with the directory containing both the project code and the StarCraft II folder as a shared folder. This can be done using the command 
+
+\begin{lstlisting}[language=bash]
+nvidia-docker run -d --rm --name bwinter-tensorflow -v /data/home/$USER:/data/local/home/$USER bwinter-tensorflow:latest
+\end{lstlisting}
+
+Afterwards one can connect to the running image by executing a bash shell on it:
+\begin{lstlisting}[language=bash]
+nvidia-docker exec -it bwinter-tensorflow bash
+\end{lstlisting}
+
+When connected to the image one can navigate to the shared project directory and run it as normal.
+\subsection{Usage}
+There are two main entry points for this project: train.py and plot\_baselines.py.
+The train.py module handles not only training, but also testing and validation of all algorithms, Baselines and A3C, used in this project. There are a couple of run option available in addition to the engine parameters mentioned in section \ref{sec:engparam}:
+\begin{itemize}
+\item map - Name of the map to be run
+\item algorithm - path of the algorithm to be run. Has the format modulepath.Class.
+\item run\_time - specifies either seconds(A3C) or number of steps(Baselines) that the algorithm should run for
+\item threads - number of environments to run in parallel
+\item save\_model - folder to save trained models in. No models saved if left empty
+\item load\_model - model file to be loaded. only required for validation
+\item render - whether to render the PySC2 debug window. Only recommend when running single environment (sim\_proc)
+\item validate - whether to run validations instead of training. During validation the  model is not improved.
+\item action\_args - whether to run environments with action coordinate arguments or simplified action lists.
+\item lr - learning rate to be used
+\item gamma - discount factor
+\end{itemize}
+
+A standard command for training could then for example be
+
+\begin{lstlisting}[language=bash]
+	python train.py --map FindUltralisk
+    	--algorithm baselines_mod.acktr.acktr.Acktr
+    	--run_time 80000000 --save_model models/fu
+        --lr 0.0005 --action_args > logs/last.log 2>&1 &
+\end{lstlisting}
+
+The plot\_baselines.py module only has one parameter: dir. This parameter specifies the directory in which the environment logfiles can be found.
+
+\begin{lstlisting}
+python plot_baselines.py --dir logs/res_fu_acktr
+\end{lstlisting}
+
+\subsection{Train Module}
+The train.py module is responsible for defining and initializing absl command line parameters, setting up logging, loading maps, and importing and running the specified algorithm class. It is designed as abstract as possible, in order to provide one single entry point for all algorithms for both training and validation. 
+
+On running this module, it first creates an environment wrapper using the specified map parameter. This is separate from the environments that are actually run during training and is only created for the purpose of providing it's observation\_space and action\_space parameters to the algorithm in case the algorithm needs this information before creating it's own environments. After that, the class specified by the algorithm parameter is instantiated using the \lstinline{import_module} and \lstinline{getattr} methods. Lastly, it executes the run method of the instantiated object.
+
+
+\subsection{Plot Baselines Module}
+\label{sec:plotbase}
+The Plot Baselines module uses matplotlib in order to plot the episode logs created by OpenAI's JsonOutputLogger. In the logfiles created by this logger each line, except for the first, is one JSON Object representing one episode, with three  properties:
+\begin{itemize}
+\item $t$ - the time in seconds the algorithm has run until the end of this episode
+\item $l$ - the length of the episode in steps
+\item $r$ - the reward at the end of the episode
+\end{itemize}
+
+\begin{figure}[htb]
+  \centering
+      \includegraphics[width=1\textwidth]{Figures/plot_example_preview.png}
+  \caption{Example output of the \lstinline{plot_baselines} module. Output was generated from 16 environments(blue) and also contains a plot maximizing rewards over all environments(red) and a plot measuring the mean over all environments(orange) }
+	\label{fig:plot_example}
+\end{figure}
+
+Figure \ref{fig:plot_example} shows an example output of this module. Generated are plots for each individual environment/log file of a run in blue. From the data for these plots two additional plots are created: one plot representing the mean reward over all environments for each episode, and one plot representing the maximum reward that was achieved across all environments for each episode. Each sub plot contains both the actually achieved or calculated values in the background with low opacity, and a smoothed version of the graph, which is calculated using numpy's convolve function and a window of a few thousand values. This smoothed graph gives a rough trend curve, making it easier to discern how much reward was achieved on average over a certain period of time. 
+
+Averaging twice, once across environments and once across timesteps might make results seem worse than they actually are however, because this really emphasises consistency of results more so than actually getting the highest possible rewards. This is the reason that in addition to the graph of mean rewards the graph of maximum values is shown as well. As Figure \ref{fig:plot_example} shows, the rewards achieved by the individual environments tend to be substantially similar, which is somewhat expected, because their decisions come from the same neural network. For this reason only the max and mean plots are shown as evaluations in the Evaluation chapter and not individual environment results. 
+
+\subsection{Environment Wrappers}
+\label{sec:wrappers}
+The environment wrappers are a very important component of this project. They are also not only useful in this project, but instead are designed to be used independently as well. These wrappers fulfill two primary functions. Firstly they provide a unified and familiar interface to the actual game environment. The interface is modelled after and actually extends the OpenAI Gym Environment base class. This approach was chosen, because the OpenAI gyms are the industry standard for reinforcement learning environments and should be well known to anybody working with RL algorithms. Even many environments that are not OpenAi gyms follow a very similar pattern.\\
+The pysc2 environment however has a number of key differences which make it a little bit more difficult to adapt different RL algorithms for it. Using these wrappers however it becomes straightforward to apply, for example, the OpenAI Baselines algorithms to StarCraft II scenarios as was done in this project. The adaptation of other algorithms to PySc2 should be simpler with these wrappers also.
+
+The second function of these wrappers is to add an additional layer of control over the environment.
+Instead of exposing the full complexity of the PySc2 environment, with millions of possible actions and a multitude of feature layers and discrete features, utilizing these wrappers one can choose exactly which features to expose and which actions to allow. This permits more precise tuning of the difficulty of the scenarios. \\
+In the case of the simplified variants of the scenarios these wrappers do not even expose the standard PySc2 actions at all and instead follow somewhat of a hybrid approach, mixing conventional programming with reinforcement learning. In these environments a number of high level and more abstract actions were implemented that are more or less specific for one scenario and only these high level actions can then be used by the reinforcement learning algorithms.
+
+The actual implementation of these environment wrappers and how they integrate into the rest of the system has undergone many changes and overhauls over the course of this thesis, as they are binding everything together making them especially important for this project.
+In the beginning the goal was to keep the wrappers as general-purpose as possible, with each wrapper working for as many different scenarios as possible. However, the way the scenarios developed and especially how restricted they are regarding their input layers and available actions this turned out to not be appropriate. In contrast the current implementation requires one environment specifically for each map, but in return the individual wrappers have become much simpler and smaller.
+
+All environments extend the Base Environment class BaseEnv, that now contains most of the functionality needed by the wrappers.
+The BaseEnv wrapper extends the OpenAi Gym class and therefore needs to implement the methods
+
+\begin{itemize}
+\item \lstinline{_step()}
+\item \lstinline{_reset()}
+\item \lstinline{render()}
+\end{itemize}
+and also the properties of
+\begin{itemize}
+\item \lstinline{action_space}
+\item \lstinline{observation_space}
+\end{itemize}
+
+The \lstinline{render} method can be simply left empty though, as PySc2 handles it's own rendering and does not require a stepwise rendering call. The \lstinline{_step()} method needs to advance the environment taking the action specified by the action parameter and returns the tuple: \lstinline{(s_, r, done, info)}, where
+
+\begin{itemize}
+\item \lstinline{s_} is the new state of the environment, after the taking the action a
+\item \lstinline{r} is the new reward
+\item \lstinline{done} is a boolean, representing whether the current episode is over
+\item \lstinline{info} is an arbitrary python dictionary, that may contain information not directly impacting the environment
+\end{itemize}
+
+This \lstinline{_step} function is the same for all wrappers and is not individually implemented.
+
+The actual environment step is done by the PySc2 environment which requires a PySC2 FunctionCall object. However, this step function returns a complex timestep object, that is not usable in this state. Before this state can be used by a reinforcement learning algorithm it still needs to be transformed, which is done by the instance method \lstinline{get_state}, which in turn uses the static \lstinline{get_input_layers} method of the helpers module. The \lstinline{get_input_layers} method goes through all available screen input layers of the current state(minimap layers were largely ignored in this project, as the scenarios only use one screen) and reshapes and concatenates all layers found in the private \lstinline{_input_layers} variable, that has to be set by each wrapper individually and only contains dummy data for the base environment. This approach of representing the state was chosen in order to be able to restrict the observations for each scenario to only exactly the information that is needed to solve it. The other option would have been to always concatenate all layers for every scenario. Unfortunately this would leave a lot of irrelevant information for each specific scenario, complicating and slowing down the learning process.
+
+The \lstinline{_reset} method simply calls the reset method of the PySc2 environment and afterwards returns the state again using the \lstinline{get_state} method. While this is all that is necessary for \lstinline{_reset} to work it may be advisable to completely rebuild the environment every approximately 8000 Episodes depending on the complexity of the map. This is because memory usage of the StarCraft II engine increases considerably the longer a map is running. Likely this is because StarCraft II needs to keep a record of all actions and unit information since map start in order to reconstruct and save replays of the map. Rebuilding the environment is done by deleting the \lstinline{_env} variable and setting it to a newly created environment. Although PySC2 already automatically reloads the map after a maximum amount of steps memory problems can manifest even before that, which is why such a rebuild is implemented here aswell.
+
+The \lstinline{action_space} and \lstinline{observation_space} properties return a gym.spaces.discrete value and gym.spaces.Box respectively. These gym types are used instead of returning an integer and a numpy shape tuple, as they offer additional functionality and a different interface, that are used by OpenAI Baselines algorithms.
+
+In addition to these methods and properties required to extend the gym environment class there is one more method that all environment wrappers need to implement individually, the \lstinline{get_sc2_action} method. This method gets the action chosen by the neural network as a parameter and has returns a PySc2 FunctionCall object that represents the actual StarCraft II action that the agent will take. This is implemented on a per wrapper basis, because this lets the wrappers handle the same actions slightly differently if need be.
+
+To properly extend the BasEnv class only three things need to be implemented.
+The first is a list of available actions ids. The ids should be the same used in \\pysc2.actions.FUNCTIONS. 
+In simplified variants of scenarios
+Action ids may be duplicated in this list, as each action in this case is attached to one of the directions up, down, left or right but still refers to the same underlying PySC2 function, only with other parameters attached.
+
+The second one is a list of input layers, the combination of which should represent the state of the environment. The layers should be specified by ids set in pysc2.features.SCREEN\_FEATURES.
+This is very similar to \lstinline{_actions}
+
+Lastly the \lstinline{get_sc2_action} method has to be implemented.
+For the simplified environment versions this method makes use of the current state observation and the \lstinline{get_shifted_position} method of the helper module for determining the next location to move to or attack towards. It then returns a PySC2 FunctionCall object that can be used, to take a step in the PySC2 environment. The type of action is chosen according to the index provided by the \lstinline{action} parameter in the \lstinline{_actions} list.
+
+One unique environment is the sim\_proc\_env or Simulated Process Environment. It is not in fact a wrapper for a specific map or scenario and instead is an optional wrapper for all other environment wrappers. This additional wrapper is needed for validation and rendering purposes regarding the OpenAI baselines algorithms. It uses the same interface as and therefore "simulates" the SubprocVecEnv that is normally used when running the baselines algorithms. The SubprocVecEnv is a multiprocessing environment built for running multiple environments in parallel. When debugging, rendering, and validating this environment is problematic, which is why it is substituted by the sim\_proc\_env. Running the baselines algorithms on the other environment wrappers directly is not possible, as the algorithms do batch processing and expect to interface with multiple environments at all times.
+
+Apart from the actual environment wrappers each StarCraft II map also needs to get attached to an object that extends pysc2.lib.Map, as these Maps objects is how PySC2 loads the .sc2map file into the game client. These objects include some parameters that can also be set globally for PySC2 but most importantly the filename and location of the map. The load\_scenarios function of the maps.scenarios module creates global Map types according to an array of Mapnames.
+
+\subsection{Helper Module}
+The helper module contains static functions that are useful globally in this project and do not really fit into a specific class.
+
+One of the most important functions is the \lstinline{get_env_wrapper} function. \lstinline{get_env_wrapper} is called every time a pysc2 environment needs to be build, whether during initialization or when rebuilding an environment, and returns the correct wrapper for the map specified by the commandline parameter.
+In order for this to work a naming convention has to be adhered to: map files in the \lstinline{StarCraftII\Maps} directory and the wrapper class have the same name and are written in upper camel case, while the module containing the wrapper class located in the \lstinline{util.environments} module is written in snake case. The function first imports the necessary module and class and then returns the object created by the class's constructor.
+
+Also used for all scenarios is the \lstinline{get_input_layers} function. This function is used by all wrappers in their respective \lstinline{get_state} methods and by extension \lstinline{observation_space} properties. It requires the current pysc2 timestep and a list of layer ids, that should be part of the observation/state of the environment. The method creates the state, that is sent to the neural network by extracting the specified layers from the PySC2 timestep object and concatenating them into one 3 dimensional matrix. Each layer basically functions as one channel in a 2D image that is processed by the Convolutional Network.  
+
+In addition to these functions, that are used in all scnearios, the helpers module contains a few functions only utilized by some environments.
+One example is the \lstinline{get_shifted_position} function. It takes the current pysc2 timestep, a direction and a distance in map units as parameters and returns screen coordinates, that are the result of shifting the current position of friendly units in a certain direction by the specified distance. This is used for all of the simplified variants of the environment wrappers, where for example Move Screen or Attack Screen commands are converted into grid movement.
+
+\section{A3C Algorithm}
+\label{sec:ac3impl}
+\subsection{Architecture}
+The implementation of the A3C algorithm used in this project is adapted from the implementation at \citep{a3ccartpole}.
+This implementation is somewhat different from the one proposed in the original paper. In fact, it is closer to the GA3C implementation \citep{DBLP:journals/corr/BabaeizadehFTCK16}, and depending on which parallel processing architecture is chosen even to A2C.
+\newpage
+This A3C implementation features five components/classes:
+\begin{itemize}
+\item a3c - class for initialization and running of the algorithm
+\item Brain - class holding the global neural network model and graph
+\item Agent - class choosing actions and putting samples into the training queue
+\item Environment - class handling the RL environment
+\item Optimizer - class transferring data from the queue to the GPU and training the network
+\end{itemize}
+that are described in more detail in the following sections.
+The biggest difference to the standard implementation of A3C is that instead of having individual network parameters for each worker thread, there is only one global neural network with one set of parameters. This architecture is depicted in Figure \ref{fig:a3c_over}. 
+
+ \begin{figure}[htb]
+  \centering
+      \includegraphics[width=1\textwidth]{Figures/A3C_Project_Overview.pdf}
+  \caption{ Overview of the A3C Architecture used in this Project. Shows the interaction between the different high level component classes of Environment, Optimizer and Brain}
+ \label{fig:a3c_over}
+\end{figure}
+
+The advantage of this version of the A3C algorithm is that it manages to utilize the GPU more effectively, by using multiple optimizer threads that only have the job of feeding samples to the GPU. One disadvantage is that for performance reasons this architecture requires a relatively large batch size, meaning that training samples are not processed immediately. This introduces considerable policy lag, where the network chooses actions always slightly behind the current policy as given by the available training samples. Also, special neural network layers like LSTM, that process a chain of samples in order to process time series do not work any more, as samples are put into the network by all agents completely asynchronously abstracting from all temporal information that connects the samples.
+
+\subsection{A3c.py}
+The A3c module is what is started by the train module and initializes all other objects and modules required for running the A3C algorithm. It also oversees the starting and stopping of the parallel processing environment. The A3C class features only it's constructor and a run function as methods, as is required by the train.py module.
+The constructor creates all the environments and optimizers, the global neural network in the form of the Brain class and the gamma parameter used in the n step return.
+
+Environments and Optimizers are only created here when the validation flag is not set, as during validation no optimizers are needed, and a single validation environment is created elsewhere.
+The \lstinline{none_state} created in the constructor is an empty placeholder state that will later be used during the optimization step.
+
+The run method starts all threads, and then sleeps until the time specified by the \lstinline{run_time} Flag is over, with occasional breaks for logging and saving intermediate models, and then stops and joins all threads.
+For a validation run the code is somewhat similar, but it uses only one environment, no optimizers and no logging.
+
+\subsection{Brain}
+\label{sec:brain}
+The Brain contains the neural network code and represents the global network used by all environments and agents. During initialization a new Keras Model and tensorflow graph are created. The Keras model uses the functional approach to model creation in order to make use of multiple in- and outputs. More information about the actual neural network can be found in section \ref{sec:polmodel}. 
+
+The method creating the tensorflow graph definition starts off with defining placeholders for the inputs and outputs of the neural network and loss functions. It then gets \lstinline{p} and \lstinline{v} values from the model using the State placeholder \lstinline{s_t}, \lstinline{p} being the softmax activated action array and \lstinline{v} being the value function result for this state.
+
+Next, the loss function is constructed. As described in section \ref{sec:a3ctheory} it has three distinct components: the policy loss, the value loss and the entropy, that can each be weighted in order to put stronger or weaker emphasis on these components. RMSProp has been chosen as an optimizer here as well.
+
+After that follows the set of functions that are exposed to environments, agents and optimizers for the use of this "Brain". First are the predict functions used to choose actions and/or query the current estimate of the value function.
+Using tensorflow's default graph they simply call the predict function of the keras model and return the variables that are needed.
+
+Also, the brain offers the optimize method, used by the optimizer threads in order to train the neural network. This is done in batches. To that effect, the size of the training sample queue is checked and if it is smaller than the batch size the thread simply yields. Otherwise the queue is emptied and transformed into vertically stacked numpy arrays or vectors, each containing all values for one of the elements in the tuple $(s,a,r,s\_,s\_mask)$. 
+
+The rewards up until this point have been only the immediate discounted rewards of
+$$r = r_0 + \gamma r_1 + \gamma^2 r_2 + ... + \gamma^{n-1}r_n$$
+without the estimated value of the state afterwards $\gamma^nv(s_n)$. This component is added here by querying the keras model for the current value function estimation.
+
+In order to do this efficiently through the use of matrix multiplication the $s\_mask$ vector is needed. It is a mask containing information on whether the states were terminal, or not. If a state is terminal the value function component of the discounted reward should not be added, which can be achieved by simply multiplying the predicted value function with the mask vector.
+\begin{lstlisting}[language=Python]
+r = r + shared.gamma_n * v * s_mask
+\end{lstlisting}
+
+After computing the rewards the network's optimizer's minimize function is run, with these vectors fed to the network using a feed dictionary.
+
+\subsection{Environment}
+The environment class extends the threading class, contains an agent and an environment wrapper and is responsible for running the training episodes. It does this continuously after calling it's run method until a stop signal is sent.
+
+Each episode starts by resetting the PySC2 environment through it's wrapper, after which it runs indefinitely until either the environment returns information that the episode is over, or the thread is stopped. In each step of an episode the environment is yielding for a short duration specified by the \lstinline{thread_delay} flag. While this is not always used, this enables the possibility of efficiently using more environments and optimizers than CPU threads are available.
+
+After that, an action is chosen by the agent and then this action is used to perform the next step in the environment. If the episode is over, the successor state \lstinline{s_} is set to None, after which the agent initiates training of the neural network with the use of the current state \lstinline{s}, the chosen action {a}, the current reward \lstinline{r} and the next state \lstinline{s_}. Lastly, the current state is set to the successor state and the next step begins.
+
+\subsection{Agent}
+The agent class is responsible for choosing actions as well as keeping a sample memory in order to calculate an n-step-return reward. As it's parallelism is already granted by being created inside the environment class, the agent does not need to be a separate thread.  
+
+Upon calling the act method an action is chosen according to the current state $s$.
+To achieve this, the neural network first predicts action probabilities according to the state. Afterwards one of these actions is chosen at random with respect to the probability vector returned by the neural network. A different approach could be to always choose the most probable action through
+\lstinline{a = np.argmax(p)}. While this would be useful for a perfectly trained neural network this would largely prevent exploration. If the network only chooses the actions it deems best, it is completely closed off to state spaces that lie outside of it's current view and which might be much better. Without such exploration the network is almost sure to converge on a very suboptimal local maximum.
+
+The original code this A3C implementation is adapted from implemented an additional method of exploration, $\epsilon$-greedy. With $\epsilon$-greedy, $\epsilon$ percentage of actions were chosen completely at random not taking into account the neural networks' predictions at all. The value of epsilon was then linearly decayed over the course of training. This was removed in this project however, as having two different methods of exploration active at the same time did not seem to provide any benefit.
+
+The train method both adds the training samples produced by the agent in conjunction with the environment to the memory array used to calculate the n-step-return rewards and removes samples from the memory in order to add them to the actual training queue, that is transferred to the neural network by the way of the optimize method described in section \ref{sec:brain}. All samples are stored in the memory, but not every call of the train method also adds a sample to the network's training queue. Samples are only added to the queue if either more than n samples are in memory, with n being the size of the n-step return, in which case only the earliest memory sample is added, or if an episode is finished, in which case the entire memory is dumped into the training queue.
+
+The n-step return is not calculated individually for each sample, but instead kept as a property of the agent and is calculated in a rolling manner, with each new sample adjusting the reward. At the end of each episode this rolling reward is reset. 
+
+\subsection{Optimizer}
+The optimizer class extends the threading class as well and is the simplest of all the classes with less than 20 lines of code. After initiating its run method it simply repeatedly calls the optimize method of the Brain object, until a stop signal is received.
+
+\section{OpenAI Baselines}
+\label{sec:baselinesproj}
+\begin{figure}[htb]
+  \centering
+      \includegraphics[width=0.7\textwidth]{Figures/Baselines_Overview.pdf}
+  \caption{ Overview of the OpenAI Baselines Architecture and how it integrates into this project. While high level control of the algorithm and its Network Policy in addition to the environment wrappers reside inside this project, they interact with the Runner, Model and parallel processing environment from inside the OpenAI Baselines module.}
+  \label{fig:openoverview}
+\end{figure}
+
+While the environment wrappers do most of the work to integrate the OpenAI Baselines algorithms into this project some modifications were made to the actual baselines algorithms. As each baselines algorithm has to be adapted individually this project focused specifically on the A2C and ACKTR algorithms.
+
+At first the modifications were done on a copy of the entire baselines module, that was integrated into the projects git repository entirely. The current state is however, that only the few necessarily modified files are part of the project and the baselines module still has to be installed separately. This architecture is illustrated by Figure \ref{fig:openoverview}. There are three major components that had to be modified.
+
+The first component are the run scripts contained in the individual run\_atari.py files. These were built into a class that also contains the \lstinline{learn} function of acktr\_disc.py and a2c.py. With their modifications they fulfill roughly the same role of initiating and running the high level operations of their algorithms, as the ac3.py does for the A3C algorithm.
+
+The second component is the policy model. Even though it is fully written in tensorflow and not keras, the abstract utility functions offered by the baselines project made it easy to reconstruct the same model that is used for A3C.
+
+The last modification was to finish the implementation of features to load and validate a previously trained model. While there were already save and load functions attached to the model they were not used in the code. Also there was no option to run only a single, non sub\_proc environment, which is very useful for validation purposes. 
+Lastly the actual training of the model was disabled if the validation Flag was set in order to not skew results.
+For rendering purposes during validation an additional per step delay was added as well, as to limit execution to only a few steps per second, making it easier to watch for humans.
+
+\section{Policy Model}
+\label{sec:polmodel}
+While quite a few configurations of CNN's were tried over the course of this project the main one in use for many of the evaluations is the structure proposed by DeepMind in their Atari-Net and that is also mentioned in \citep{sc2}.
+
+It features two convolutional layers with a RelU activation function and no pooling layer in between.
+The input size of the first convolution layer is directly determined by the \lstinline{observation_space} property of the respective environment wrappers.
+Using pooling layers for these scenarios specifically is not necessary, and might even be a hindrance since the translation invariance that it brings with it does not translate well into the game world where the specific coordinates might matter a great deal. When learning scenarios that utilize a bigger game world of more than one screen, like for example the competitive Player vs Player maps this translation invariance will likely become much more useful.
+
+Following after the convolution steps is one fully connected layer, which then feeds the outputs for the action and the value function. This configuration has been working very well for all scenarios with one small caveat. If there is single single Zergling on the Map the network has much more difficulty determining its position than with groups of Zerglings or other units. The Zergling is the smallest unit in the game of StarCraft II with the next biggest units being twice its size, and is also a unit that is rarely on its own, meaning that this is a very rare and isolated problem.
+
+
+
+
+\section{Extensions to the RL Implementation}
+\label{sec:extensions}
+In order to help the reinforcement learning algorithms to perform optimally in the StarCraft II environment some extensions were made to the core algorithms, which are described in the following subsections. Section \ref{sec:multistate} covers how the environment observations are formed and can be used as the networks input, with the addition of a state history, recording the latest time steps. Section \ref{sec:spatial} will then discuss options for modelling the vast action space of StarCraft II efficiently and lastly \ref{sec:replearn} will describe an attempt to make use of StarCraft II replays as training experiences and building a semi-supervised version of A3C.
+
+\subsection{Multi Input States}
+\label{sec:multistate}
+One important aspect of reinforcement learning is defining what information each state $s$ contains and how it is presented to the reinforcement learning algorithm.
+In the PySC2 environment this decision lies primarily with the choosing of screen and minimap input layers.
+Each of those layers represents a single channel image with the dimensions $(X, X, 1)$ with $X$ being either the screen resolution or the minimap resolution parameter set during start-up. Non quadratic screen aspect ratios are not permitted by PySC2 as of now. As having differing screen and minimap resolutions is very reasonable, two input layers are needed for the neural network model. Alternatively, padding on the smaller of the two can be used to equalize their size.
+
+Multiple input layers can then be combined by treating the state of the game as a multi-channel image, with dimensions $(X,X,Z)$ where X is the image resolution and Z is the number of input layers representing the state $s$. Each layer is then one channel of the input image.
+
+Not all game information is found in those input layers however. The vector of discrete information available in PySC2, for example, needs to be an extra model input as well. This input should not lead into the convolution steps of the model though, and should instead directly connect into the Fully Connected layers, effectively merging with the flattened convolution outputs.
+
+The last extension regarding the state of the environment would be to include a history of timesteps to incorporate temporal information into the state. 
+Using a history of timesteps to define the state of the Environment, as was successful for example while learning the Atari games \citep{DBLP:journals/nature/MnihKSRVBGRFOPB15}, can not only improve training results in general, by giving the algorithm a backwards view on what it had previously done, but can also be strictly necessery in the case of MDPs with limited information. The state for a game of StarCraft II for example can not be fully described by the current state, mainly because the fog of war obscures most of the map and the player has to extrapolate what the opponent could be doing from previously gained information, but also because the direction and speed of moving units can not be determined by a single time slice. While this is not necessary for the specific scenarios that were tested in this project, it should still be somwhat of an improvement.
+
+The implementation for this is very straightforward. In order to use this history across all environments it is implemented within the base environment \lstinline{base_env} class. The history is stored as a simple array with the length of the specified history size parameter. It is initialised and reinitialised at the start of each episode in a way that each element of the array is the first state of the episode. This is done to keep the dimensions of the state the same, although in the first few states no full history is available yet. A different option would be to fill it with empty states instead, but there should be negligible difference. In each subsequent step, a new step is added to this history, and the oldest timestep is removed. 
+
+The only other modification that had to be made was to the \lstinline{get_state} method of the same class and the corresponding \lstinline{get_input_layers} method of the helpers module. The \lstinline{get_input_layers} module now has the entire history as a parameter instead of the current timestep and concatenates all layers accordingly. As the \lstinline{get_state} method is also used to calculate and expose the \lstinline{observation_space} property, which is used to determine the input dimensions for the Neural Networks both in the OpenAI baselines and in the A3C algorithms, no further code modifications were necesssary.  
+
+The biggest disadvantage to using this history size is that it slows down training speed dramatically. Using 4 timesteps for example the steps that can be gone through per second is almost halved. For this reason one has to carefully weigh the improvements that this feature brings with it against the slower training speeds. 
+
+One additional slight disadvantage is a higher memory consumption. Since much of the memory usage of this program is tied up in the environment state, especially in regards to the training queue for the A3C algorithm, increasing the size of a single state results in an increase of the programs memory with almost the same factor. with history sizes above 5 this can lead to memory shortages very quickly and makes it a requirement to utilize more optimizers and smaller batch sizes, that keep the training queue as small as possible. This is true in particular, because the optimization itself is slower, as more data has to be transferred to and be processed by the GPU. As training samples are directly processed in a step wise fashion by the OpenAI Baselines algorithms this is less of an issue for them. 
+
+Instead of using Keras' Conv2D layers for representing the environment with concatenated history timesteps, there is also another option available: In addition to the 2D Convolution Layer Conv2D Keras also offers a 3D Convolution Layer Conv3D. Using that, the state $s$ could be represented with dimensions $(X, X, Z, T)$
+With T being the number timesteps including the current one, that should be part of state $s$. This was not tested however.
+
+\subsection{Spatial Information Policies}
+\label{sec:spatial}
+So far only the implementation of high level actions, that do not reflect actual StarCraft II or PySC2 actions were discussed. This section discusses multiple options for letting the policy model handle PySC2 actions directly. One unique problem of the StarCraft II environment is, that in every step there are many complex actions available, which is caused by many actions requiring spatial information in the form of screen or minimap coordinates.
+
+The naive approach would be to simply flatten all action and parameter combinations into one action list and treat them as any other reinforcement learning problem. This is not very feasible however, as this can easily result in hundreds of millions of actions depending on the screen and minimap resolutions. For the default resolutions of 84 for screen and 64 for minimap for example there exist 101938719 Unique actions.
+
+DeepMind's paper \citep{DBLP:journals/corr/dmsc2} proposes two better approaches one of which was implemented in this project. Both of them are depicted in Figure \ref{fig:pysc2_state}.
+The approach not implemented here is to use a Fully Convolutional Policy, as used in DeepMind's FullyConv neural net. In contrast to a regular CNN Policy the FullyConv net does not discard the spatial information gained during the convolution steps by adding flattening and fully connected layers. Instead, the convolutions are carried till the end with stepwise padding in order to maintain the input resolution. In the end this spatial information is directly carried over into the spatial actions.
+
+The last approach is to separate the spatial parameters from the actions themselves and let the neural network learn them independently. This means, that the model now has two additional outputs for the potential x and y coordinate of an action. For actions that do not require spatial information these outputs are simply ignored. Of course this separation does not inherently reduce the complexity of the problem, as multiplying the number of actions with the possible x and y coordinates still results in the same number of possible actions. The advantage is however, that the correlation of values is clearer in this approach. 
+
+\begin{figure}[htb]
+  \centering
+      \includegraphics[width=1\textwidth]{Figures/sc2le/sc2le_state.png}
+  \caption{The Policy model for separation of spatial action parameters from the actions themselves(Left) and the policy model for the fully convolutional approach(Right). Both approaches use a CNN to process the minimap and screen features, but while the state is flattened for the first approach, the state and resulting actions stay convolutional for the entire procedure for the second approach \citep{DBLP:journals/corr/dmsc2} }
+  \label{fig:pysc2_state}
+\end{figure}
+
+
+In order to implement this method of incorporating additional action information into the policy considerable modifications have to be made both to the A3C implementation, and the OpenAI Baselines algorithms. For the OpenAI Baselines algorithms this was done mostly in the python modules already adapted for this project residing in the \lstinline{baselines_mod} module. The first modification to be made is to the neural network policy, adding two additional outputs. Both of these connect to the same fully connected layer as the value function and action outputs and also use softmax activation. Only the CNN policy was modified, as other available policies for acktr and a2c were not tested in this project.
+
+The other difference is in the loss function, which now incorporates not only the action loss but also the parameter loss. For the A3c algorithm both the policy loss and the entropy is modified, with the new policy loss being:
+$$J(\pi) = -A(s, a) * (\alpha * log P(a) + \beta * log P(x) + \delta * log P(y)$$
+with $\alpha$, $\beta$ and $\gamma$ being three new hyperparameters, that determine the importance of choosing the correct action versus choosing the correct parameters. For simplicities sake these were not accurately tuned over the course of this project and instead set to 1, 0.5 and 0.5 respectively. These values were chosen. because choosing the correct action was deemed considerably more important in the specific scenarios of this project, and there should be made no difference between the importance of x and y parameters.
+
+\subsection{Learning from Replays}
+\label{sec:replearn}
+One of the challenges with very complex environments like StarCraft II with incredibly huge state spaces and accordingly manifold state transitions is that it can be difficult for an environment to even encounter advantageous states in order to learn from them. This is exacerbated by the fact, that episodes in the StarCraft II consist of hundreds of steps even in small mini-games and tens or hundreds of thousands of steps in the actual game where very precise action is required to gain any reward at all and tangible rewards can lie hundreds of steps in the future. 
+
+One attempt to deal with that challenge that was made in this project is to use pre-recorded replays in order to augment the training samples that are generated by the environment. This is done in a similar manner as experience replay was used to augment training of, for example, the DQN algorithm \citep{DBLP:journals/corr/abs-1712-01275}.
+Instead of replaying experiences that the agents have already encountered however, human replay samples can be used for augmentation. Still, the training experiences of the human players are viewed and processed from a first person view, which means that the experiences represent exactly the features and actions the algorithm could and would see. 
+This is in contrast to learning from a third person view, which would also be a possibility using the PySC2 framework and is a research topic discussed for example in \citep{DBLP:journals/corr/StadieAS17}. 
+
+For the scenarios utilized in this project third person imitation learning would not be very useful, as all players and also third party spectators have roughly the same view on the environment. Nevertheless, for learning the entire game of StarCraft II this is a technology that could prove very useful. In a competitive 1v1 game the agent could learn from both players at the same time, by posing as the third person spectator with the full view of the entire game, instead of just learning from the actions of a single player in first person view.
+
+This introduction of pre-existing data into the reinforcement learning process most closely relates to the research topic of semi-supervised learning, e.g. \citep{DBLP:journals/corr/FinnYFAL16}, \citep{DBLP:journals/corr/schgan}. It is not entirely the same however. Semi-supervised learning mostly concerns itself with incorporating a gold standard, i.e. labelled training data. This does not apply to what was tried in this project, but some of the same concepts apply.   
+
+Learning from human replays has the advantage, that the policy can be improved by being shown very specific state spaces which are desirable. The challenge for the algorithm then somewhat shifts from searching for states which give maximum reward to searching for a set of state transitions, which lead to such a state that is already known. There are possible disadvantages to this approach as well, though. Adding too many human training samples or samples without enough variety for example could potentially discourage exploration and lead to over-fitting of the neural network weights, which could result in the algorithm converging on suboptimal local maxima. Additionally exposing the algorithm to the human strategy of solving a scenario might prevent it from finding it's own different and possibly better overall strategy. For this reason, this augmentation process should only really be used if one can be sure, that the recorded replays contain the most optimal way of solving a scenario.
+
+The replays that were used for this augmentation were recorded by playing the scenario maps over and over from within StarCraft II. StarCraft II has the built in feature of saving games as .SC2Replay files which is taken advantage of here. These .SC2Replay files contain all necessary map information, all actions that were executed by all players and their results. This information can then be used by the SC2 Engine to reconstruct the game and review it in its entirety. Nevertheless, the way this information is stored is not very useful for usage in an RL algorithms. Therefore the first task is to convert this .SC2Replay data into a more convenient format.
+
+This adds a new third entry point to this project, the convert\_replays module. The main objective of this module is to take all replays available for one specific scenario and output one easily readable file that can be plugged into the already existing algorithms as seamlessly as possible.
+In order to achieve this, this module employs the replay playing functionalities provided by the PySC2 framework. Stepping through a replay in PySC2 is considerably similar to stepping through an active PySC2 Environment, but there are some key differences.
+
+In order to get training samples that fit the experiences of the RL algorithms best, the same step multiplier of 8 game steps for each 1 environment step is used again here for replays. Similarly the same resolution for the rendering of input layers has to be used. During each step one observation/state is obtained from the SC2 engine, not by submitting an action like it would be with an active environment, but by simply querying the replay controller. Unfortunately this observation differs greatly from the observations obtained from an active environment and is in many areas even incomplete which is one of the difficulties that were encountered trying to implement this approach. The information that needs to be extracted in each step is essentially the same tuple of 
+$(s, a, r, s\_)$
+that is used in training. As this replay conversion is only implemented for versions of the algorithms that employ spatial information policies using screen coordinates, x and y coordinates for the action have to be retrieved as well. The choice to exclude the simplified version of the scenarios and with that the standard action list based versions of the algorithms was made because for one it is somewhat difficult to create human replays with their restrictive movement patterns and also it is not always possible to recreate the necessary abstract actions from an arbitrary replay.
+
+The most straightforward information to retrieve is the action that player 1, the human player made. The actions property of the observation contains a list of all actions that were made since the last controller step. As the AI for scenarios is controlled strictly from within the map editor, this list only contains the human players actions. Additionally the human players creating the replays should restrict themselves to not act faster than the step multiplier chosen implies, which for a multiplier of 8 is 3 actions per second. This results in the actions property having either 0 actions in which case the current step is simply ignored or 1 action, which is then used for the training sample. As the algorithms do not learn on PySC2 action ids directly however, and instead on the ids provided by the respective environment wrappers, the wrappers' \lstinline{_actions} array needs to be queried for the index of the PySC2 action. In order to get the correct wrapper this means, that the module needs the map of the replay as a parameter. The x and y coordinates can also directly be obtained from the action object.
+
+Next, the observation state is obtained. The input layers are stored somewhat similarly to an active environment but instead of numpy arrays they are stored as a byte buffer, with each pixel either being represented as a boolean, a char, or an integer, depending on the maximum value of the layer. For all byte sized layers numpy's \lstinline{frombuffer} method is used for conversion. Unfortunately, layers like the creep layer used in the Find Ultralisk With Creep scenario that contain only bit information are not stored in a way easily read by numpy. Instead of the byte sized booleans used in numpy they are stored as a bit array but still using the datatype bytes. For this conversion a custom function was implemented, that first converts the bytes into an array of unsigned integer bits and then converts each group of bits into it's actual integer representation. \\
+The \lstinline{input_layers} property of the environment wrapper is used in order to determine which layers should be used, and to reproduce exactly the same state the wrapper would see if it was an active environment.
+
+The reward can be obtained directly through the curriculum score property of the observation. The problem with using this score as a direct reward however would be, that the algorithms, both A3C and ACKTR/A2C, do not use direct rewards for training and instead use discounted rewards making use of an n-step-return. As the samples generated by this module are supposed to be independent from each other this calculation can not be done on the fly during training and is therefore calculated here. This n step return is calculated by using a standalone agent object from the A3C Algorithm. This Agent is not attached to an environment or a brain and is directly fed the replay samples, which it calculates the discounted rewards for and then puts the completed samples into the queue, similar to how it would do it during A3C training. Of course the rewards calculated in this way are only really usable in the A3C algorithm, and even then only if the same values for the gamma parameter and length of n-step-return are chosen during training. 
+
+The OpenAI Baselines algorithms employ a slightly different strategy for their n-step-return, that is considerably harder to replicate. The main difficulty lies in the way, that that the baselines algorithms use the current value function as given by the neural network in their calculations for their discounted rewards. As the learning from replays feature was implemented very late into this thesis, there was not enough time to adapt it for the Baselines algorithms as well and therefore this functionality is currently only available for the A3C algorithm.
+
+In order to calculate this discounted reward the agent needs one more piece of information: where the end of each episode is. Unfortunately, this information is not easy to obtain due to bugs or missing features in the StarCraft II Machine Learning Protocol. There are four main ways that should be able to detect whether an episode is over due to how they are built in the map editor:
+
+\begin{itemize}
+\item player\_result - The player result property should be filled, each time the main objective of a map is set to completed. While this is correctly detected while playing within pysc2, during replay view this property gets only filled at the end of the replay with a generic win or loss information
+\item chat message - in order to reset the episode the framework writes "reset" into the chat. While there is a chat log property on the replay observation it stays empty no matter what is written in chat.
+\item episode timer - if an episode is over the episode timer is either completed or paused. the replay observation does not contain timer information however.
+\item UI - When an episode ends UI Panels are created by the map that indicate a win or loss and tell a possibly human player how to reset the episode. While there is some amount of UI information in the replay observation, these panels could not be found.
+\end{itemize}
+All of these 4 points are confirmed to be actually contained within the replay, as they can be readily inspected when watching the replay within StarCraft II. They are not handed over to PySC2 however which makes them unusable for this use case.
+
+One option to solve this problem would be to strictly have one episode per replay file. This would make the recording of replays very tedious however, as the game would have to be restarted completely after each episode which can take up to a minute. The same goes for the replay conversion. For this reason the way of a suboptimal workaround was chosen. The best quick work around that could be found was to determine episode ends by reward changes. This workaround assumes, that if the reward of $s\_$ is 0 and the reward of $s$ is not, s was the last step in that episode. This of course does not work with scenarios in which the reward can reach 0 in the middle of an episode, as is the case with the Stalkers vs Roaches scenario. Thus, this workaround should be removed as soon as some other way to detect the end of episodes is provided by PySC2.
+
+After all replay files have been processed in the manner previously described the entire queue object, that has now been filled by the agent, is pickled and saved to disk as a gzip file.
+
+The second component to this task is then to add these created sample files to the agents generated experiences. As they were directly exported from the A3C agent this is very straightforward for the A3C algorithm. Two different strategies were attempted for integrating the samples into regular training. Both of them involve feeding augmented samples directly into the neural network via the optimize method of the Brain.
+
+The first version uses a similar idea as some of the $\epsilon$-greedy exploration strategies, which slowly decay the exploration or in this case augmentation over time. Each time a regular sample is added to the training queue of the network there is a small chance a replay sample is added as well, and this chance gets smaller with each sample, converging on 0 towards the end of training. For further testing purposes this chance should be seen as a hyperparameter to be correctly tuned for the specific dataset and problem. 
+
+The second idea was to basically kick-start the training process by introducing all of the replay samples at the beginning of training, before regular samples are added. This is more akin to utilizing pre-trained weights and more or less does one pass of supervised learning, before the actual reinforcement learning begins. 
+
+
+\section{Challenges}
+\label{sec:challenges}
+This section will summarize some of the both general and specific challenges that arose over the course of this project. While some of these have already been hinted at in various sections this will give a more concise listing.
+
+A considerable amount of the challenges that were faced stem from the fact that both the PySC2 Framework and the underlying SC2 machine learning API, and with that SC2 maschine learning in its entirety, are very new technologies. Both of these were released only days before the beginning of this thesis' timeframe, with the first commit in the sc2clientprotocol github repository even being almost 2 weeks after. The challenges this offers are as follows:
+\begin{itemize}
+\item Polishing - PySC2 in particular is not yet a fully fledged, finished product. It is still actively being developed and due to that it still has some missing features and a sometimes inconsistent API that is still undergoing changes that might break programs that use it
+\item Documentation - Except for the Github README pages, that give a rough overview of the framework at best, there are no other sources of documentation available. This means, before using almost any component of this framework, one has to investigate the source code of the framework, or debug and inspect the arbitrary objects that are provided by the C++ API.
+\newpage
+\item Community - In contrast to for example the StarCraft: Broodwar machine learning API bwapi there has not yet developed a community around PySC2, both academic and non academic. Apart from DeepMind's introductory paper there are no scientific articles, and for a long time into this thesis there were no tutorials or repositories from other people that are using PySC2, to draw from for this project.  
+\end{itemize}
+
+These issues manifested especially during the implementation of the replay experience learning component discussed in section \ref{sec:replearn}. Replay viewing is a particularly underdocumented feature of PySC2. Therefore, in order to get any information out of these replays at all, a series of deeply nested objects with inconsistent architectures had to be analysed. The missing or misused properties already depicted in that section relate to these issues as well.
+
+Processing of the replays presented a different set of challenges as well however. One of the challenges arose from StarCraft II's strict version requirements for Replays. Not only are they not backwards compatible at all even down to specific path and revision versions, PySC2 needs to know the specific version number and a hidden data Hash value of the build that was used to record the replay. Moreover, there are only very few linux builds available that are almost always behind the Windows/Mac builds and on the other hand the Windows/Mac builds do not allow downgrading. Additionally the data Hash for the current Linux build was not available in the \lstinline{buildinfo/versions.json} of the sc2clientprotocol repository at the time of writing this. As Maps themselves are not backwards compatible either, although only regarding to major versions, that meant that the linux builds could not be used at all while implementing the replay conversion. Even using the Windows client development had to be halted until a version with a data Hash available was released, after which all automatic updates were shut off to prevent future versioning problems.
+
+A somewhat smaller issue encountered during implementation of the replay feature relates to the step multiplier. As already discussed in order to be able to choose the correct actions it is important, to not take more actions while recording the replay, than is indicated by the step multiplier. With a step multiplier greater than 1 the replay controller aggregates all actions that have happened since the last step. This makes it impossible to reconstruct which of these actions was decisive for this state transition and more often than not even a combination of those actions lead to this particular transition which is not a useful experience for the algorithms. \\
+While recording it is not very easy to determine however when or how fast to act to keep in this limit, as playing too slow is not conducive either. This issue was solved by not recording the replays in the actual game of StarCraft II, but instead using the "play" feature of PySC2, which allows to also set the same step multiplier for playing the game. While this does not make it impossible to act to fast or too slowly, it makes it much easier to act correctly by giving the correct stream of observations. Nevertheless, the disadvantage is that only having 3 observations per second makes it considerably more difficult to perform adequately in some of the scenarios.
+
+Apart from the implementation the training itself presented great challenges. Although the university made two and later even three quite powerful desktop computers available for use as training machines for this project, hardware and computational resources were still a very big limiting factor. Even small training sessions take multiple days, which makes proper tuning of hyperparameters not very viable. Even more so this was a problem during the development stages of this project, where bugs could sometimes only be found after waiting for hours of training, and in particular before the first time that rewards were able to be obtained at all, where one could never totally be sure whether no rewards were obtained because of a bug, bad hyperparameters, not enough training time, suboptimal network structure, problems with PySC2 or other reasons. This was made even worse by the ambitious attempt to explore the StarCraft II environment using not only a single algorithm, but three different ones. Even with significant overlap in their implementation they increased the complexity considerably, and choosing to stick with one algorithm from the beginning is one of the bigger changes I would make were I to do such a project in the future. In general this resource constraint slowed down development considerably and is the main cause of many tests and evaluations being omitted, that were previously planned. 
+
+One other challenge not directly related to implementation was the sheer size of the body of knowledge necessary in order to understand the general concepts and algorithms of reinforcement learning. As not only reinforcement learning in particular but also machine learning in general were not part of the curriculum in the Medieninformatik Master most of the knowledge pertaining to these subjects had to be obtained during the course of this thesis.
+
+
+\subsection{Parallel Processing}
+Parallel Processing is a very important aspect of reinforcement learning. Not only do multiple simultaneous threads mean faster simulation, and through that more training data, but algorithms like ACKTR additionally benefit greatly from the diversity of samples that parallel environments bring with them as will be shown during Chapter \ref{chap_eval}.\\
+Using Python as a programming language however poses an additional challenge when trying to implement a multithreaded algorithm. Python offers a multitude of different options for multithreaded programming each with different advantages and disadvantages.
+In an effort to increase training performance some of these were tried for the A3C implementation in this project and this section will compare them.
+
+The easiest and most straightforward way to implement multithreading is to use the "Threading" module. It features shared memory, that can be accessed without overhead and functions very similar to threading in other programming languages. The biggest problem with the "Threading" module is, that due to the Global Interpreter Lock(GIL) that the standard CPython interpreter employs, only one thread can be active on the CPU at any given time. This means, that for CPU intensive tasks the "Threading" module actually can bring no, or barely any, speedup compared to single core performance. \\
+One way to get around that is to move as much CPU intensive code as possible into binary compiled modules written in C. Binary extension modules can run properly in parallel and python modules like for example NumPy and SciPy exploit that fact.
+
+While substantial parts of this project do run outside of python, namely most of the keras/tensorflow code and also the simulation of the environment, which happens in a separate StarCraft II process, the GIL still slows down execution considerably. Most of this slow down comes from PySC2 itself, which does pre- and postprocessing for the data that is sent to and from the StarCraft II client. The original A3C code used in this project modified from \cite{a3ccartpole} made use of this suboptimal threading module. 
+
+The second way to get around the Global Interpreter Lock is not use the "Threading" module, and instead use one or more of the "Multiprocessing" related modules.
+Instead of working with threads that operate on the same memory, multiprocessing works with spawning different python processes that each have their own memory. Because these processes do not share the same memory the GIL is no longer a problem. Nonetheless for that same reason, implementing communication between processes is more difficult and brings more processing overhead with it.
+In using the "Threading" module, objects can be accessed and passed around mostly the same as in a single threaded algorithm, except for variables that need to be manipulated by multiple threads, which requires the use of locks. This is not as simple in multiprocessing.
+
+The first attempt at multiprocessing that was implemented in this project was made using a Manager, Proxy objects and shared memory variables. These modules offer an interface that is at least fairly similar to how objects can normally be accessed.
+
+The second try was to not use the array attached to the brain object as a queue, and instead makes use of an actual multiprocessing.manager.queue that is attached directly to the manager process.
+
+The last try was to forgo using a manager process completely and rather rely entirely on pipes and queues. As queues and especially pipes are the lowest level of communication available in the multiprocessing module they were expected to be the best performing.
+
+Comparing the different multiprocessing strategies with the threading module showed however, that in this project multiprocessing barely brings any performance benefits. The main issue is likely, that A3C requires a lot of interprocess communication, resulting in a lot of messaging overhead. What could not be determined is, why the multiprocessing related approaches resulted in sometimes much higher GPU utilization, without any simulation speed increases.
+These tests were run with 8, 16 and 32 parallel environments and 2 Optimizer threads on the 32 Core Datexis Cluster of the Beuth University.
+
+\begin{table}[htb]
+\centering
+\begin{tabular}{@{}llll@{}}
+\toprule
+Parallel Processing Strategy & \begin{tabular}[c]{@{}l@{}}Performance\\ 8 threads\end{tabular} & \begin{tabular}[c]{@{}l@{}}Performance\\ 16 threads\end{tabular} & \begin{tabular}[c]{@{}l@{}}Performance\\ 32 threads\end{tabular} \\ \midrule
+Threading                    & 317                                                                                & 551                                                                                 & 13                                                                                  \\
+Multiprocessing              & 323                                                                                & 565                                                                                 & 2                                                                                   \\
+Multiprocessing + Threading  & 321                                                                                & 567                                                                                 & 5                                                                                   \\
+MP +Th + extra Queue         & 344                                                                                & 573                                                                                 & 3                                                                                   \\ 
+Pipes + Queues               & 306                                                                                & 513                                                                                 & 2   \\ \bottomrule                                                                            
+\end{tabular}
+\caption{Comparison of computation speed of different parallel processing strategies for the A3C Algorithm. Performance is given in average Steps per Second}
+\label{table:multip}
+\end{table}
+All tests depicted in table \ref{table:multip} ran for 1000 seconds and the values for steps per second and total episodes are the sums of all Environments.
+The test making use of 32 environments even demonstrate that these multiprocessing solutions are substantially slower than the threading variant. Even the threading variant is very slow however, illustrating, that the problems with messaging overhead and GIL respectively get much worse, the more cores the work is distributed on. Moreover, increasing the number of environments above 16 introduces very sharp performance decrease due to hyperthreading. Hyperthreaded virtual cores seem to be considerably less efficient for this use case but incur the same messaging overhead.
+
+16 environments seems to be the best number to use, as it is only marginally less efficient than doing 2 runs of 8 environments, but offers more sample diversity.
+The synchronous multiprocessing environment implemented by some of the OpenAI Baselines algorithms like ACKTR and A2C is considerably more efficient, but still suffers from similar problems. It relies completely on multiprocessing pipes. Being fully synchronous however, their approach could not be fully adapted for the A3C implementation in this project. In the end the approach of mixing a Multiprocessing manager for the brain, threads for the optimizers and a separate manager queue was chosen, as it proved to offer the best performance as demonstrated by table \ref{table:multip}, even if only by a small amount.
+
+\subsection{Hyperparameter Tuning}
+The tuning of hyperparameters is a highly time and resource intensive task, but one that is very important for reinforcement learning. Algorithms like A3C in particular are very sensitive to those parameters and starting conditions. Unfortunately the only way to find optimal parameters is to brute force different combinations.
+It is especially problematic for an environment like StarCraft II, that is very slow running and also very complex. For this reason, and the finite time frame of this project parameter tuning was mostly restricted to modifying the structure of the neural network and tuning the learning rate. After an initial phase of trying to tune all of the parameters it was found that for the most part reasonable default values apart from the learning rate can provide adequate results. A proper learning rate however seemed very important for getting any results at all. In general one can say that the lower the learning rate of an algorithm, the slower it is going to learn, but the higher the chance, that it will learn anything at all. For that reason when testing a new environment a relatively high learning rate of 0.005 was chosen for the first test, which was then decreased by a factor of 0.1 for each subsequent test, until the algorithm showed signs of atleast learning a small amount. After that,or failing to get results with that approach, smaller adjustments are made.
+
+
+\subsection{Miscellaneous}
+In this section some of the smaller issues are outlined, that did not warrant a section on their own.
+One of the problems that prevented long training sessions for quite some time was a memory leak on both of the university computers made available for this project. This memoryleak caused increasingly fast memory increase, that plateaued after a couple of hours at around 3MB RAM per second. That meant, that tests longer than 8 hours could not be run effectively as RAM was automatically swapped to disk. However profiling both the projects' python code and external modules through various means like guppy, dowser, objgraph and many other high- and low-level means showed no signs of a memory leak. After weeks of debugging it was finally found that a simple dist-upgrade of the Ubuntu OS running on those computers fixed the memory leak. As tensorflow and/or keras seemed to be the culprits of this memoryleak while debugging, it is likely that the fix was a more current graphics driver.
+
+A second problem arose from an inconsistency in the StarCraft II Map Editor Trigger Code. For most of the scenarios all enemy units are given an attack order in order to force a fight between the friendly and enemy units and prevent the rl algorithm from simply doing nothing. This attack order can be given in multiple ways, but the primary choices are the "attack unit group" command which gets an array of units as a parameter, in this case all friendly units, and the "attack ground at point" command, which gets a 2D Point as a parameter, in this case the centre of the friendly unit group. From a human players perspective these two commands should do almost the same thing, but that is not the case. The difference is, that while both commands cause the ordered units to move towards the specified parameter and attack all enemy units, they do so using a very different behavioural unit AI. The "attack ground" command uses the expected and standard unit AI found in the normal game, causing each unit to target the first enemy that comes in range until it is either dead or out of range, after which the closest unit is selected as the next target. The unit AI initiated by the "attack group" command however works differently in that it seems to try to split the attacks of all friendly units evenly across the enemy unit group. The ordered units also chase their target when it goes out of range instead of retargeting. This is an important distinction especially for the Blink Stalkers vs Roaches Scenario, where the blink ability becomes effectively useless or even detrimental with the "Attack group" command.
+Because the "attack group" command seems like the more straightforward command for this problem, as it does not require a detour calculating the center point of the unit, it was initially used across all maps, and as the behavioural AI that comes with it was completely unkown to me, it took quite some time to debug.

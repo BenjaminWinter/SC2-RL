@@ -1,0 +1,28 @@
+% Chapter 1
+
+\chapter{Introduction} % Main chapter title
+
+\label{chap_intro} % For referencing the chapter elsewhere, use \ref{Chapter1} 
+
+%----------------------------------------------------------------------------------------
+
+Due to increasingly powerful hardware and increasingly efficient algorithms reinforcement learning has become more and more popular in the last few years. While there are many different applications for reinforcement learning algorithms, games, board- and video-games in particular, have become very important benchmarks.
+
+One of the most notable examples for board games being solved by reinforcement learning Algorithms is AlphaGO, which managed to beat the world Go champion \citep{DBLP:journals/nature/SilverHMGSDSAPL16}. There has also been some success at learning the vastly more complex and thereby difficult games of chess and shogi \citep{DBLP:journals/corr/abs-1712-01815}.
+
+For video games the most prominent example is OpenAI's Dota 2 AI, that managed to beat some of the best professional Dota 2 players, albeit in a considerably restricted and slimmed down version of the game. This is still very exciting however, considering that e-sports specifically and video games in general pose many more and different challenges than an ordinary board game and this AI is the first that was able to lead to major breakthroughs \citep{blogdota}.
+
+StarCraft II, while yet mostly unexplored in regards to reinforcement learning, offers new and vast possibilities for environments and scenarios to train on. StarCraft II is an especially complex game, testing many different abilities, like multi-tasking, split-second decision making, strategical thinking and many more. For this reason it should make for a very interesting environment for reinforcement learning. 
+
+The accompanying project to this thesis therefore aims to explore StarCraft II as a reinforcement learning environment and it does so with the following contributions:
+\begin{itemize}
+\item Make use of, and interface with the new PySC2 Framework as a frontend to the StarCraft II Machine Learning API 
+\item Provide combat scenarios, both abstract and scenarios from the competitive modes of the game for training and testing of algorithms
+\item To the best of our knowledge provide the first RL trained agents, that are able to achieve comparable scores to human players in real competitive scenarios
+\item Provide environment wrappers for these scenarios that make interfacing the PySC2 framework with standard reinforcement learning algorithms trivial, and that are easily adaptable to other scenarios
+\item Provide a version of the A3C algorithm, that has been adapted in multiple ways for the use with PySC2.
+\item Modify and integrate OpenAI baselines algorithms, ACKTR and A2C specifically, for PySC2
+\item Make a series of tests and evaluations across the aforementioned algorithms and scenarios
+\end{itemize}
+
+After the next chapter introducing related works and giving background information for reinforcement learning in general, these contributions are described in more detail.

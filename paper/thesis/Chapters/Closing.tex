@@ -1,0 +1,26 @@
+% Chapter 1
+
+\chapter{Closing Remarks} % Main chapter title
+
+\label{chap_closing} % For referencing the chapter elsewhere, use \ref{Chapter1} 
+
+%----------------------------------------------------------------------------------------
+\section{Conclusion}
+With the help of the combat scenarios provided with thesis it was demonstrated, that modern reinforcement learning algorithms are indeed able to learn close to optimal policies comparable to expert human players on real scenarios directly taken from the competitive 1 vs 1 mode of StarCraft II. This thesis also highlighted some of the challenges however. On the one side there is the technical aspect of the not quite finished PySC2 framework and the sheer amount of computing power necessary for learning in such a complex environment. On the other side are the challenges brought about by StarCraft II itself, like the vast action- and observation spaces and the complexity of even simple aspects of the game.
+
+This thesis also illustrated that reinforcement learning algorithms do not need to necessarily imitate human strategies and can instead develop their own interesting ways to solve scenarios, that a human might not think about, as showcased by finding the possibility of "cheating" in the ReaperZergling scenario or the simplified strategy employed in the StalkerRoaches scenario.
+
+In general it was established, that even this small excerpt of the game consisting solely of small unit combat holds very unique and interesting possibilities for building environments for reinforcement learning algorithms to be tested on. 
+
+\section{Future Work}
+This thesis has barely scratched the surface of what StarCraft II offers as a reinforcement learning environment. Even if only restricted to combat scenarios, there is still much to explore. There are dozens more unique units with unique abilities to try, before even getting to unit compositions and fully sized complex armies. There were also many strategic concepts of combat intentionally overlooked in this project, like surrounds, unit groups, retreating, etc. The biggest leap in complexity and difficulty however will come from moving from a one screen model of a scenario to using a full sized map. One of the most important aspects of StarCraft II is that it is a game of very limited state information, which is in no small part due to only a small portion of the map being visible on the screen. This makes it very difficult to even model the game as a Markov Decision Process let alone solve it, and having only one screen space worth of playable area like in this project eliminates that.
+
+Even if all the previously mentioned components are explored, combat is only one aspect of a much more complex game. Basebuilding, macro- and micro-management of the economy, scouting, overall gamesense and long term decision making could all be interesting topics for RL research individually. Of course having an RL algorithm play the actual game of StarCraft II like a human, would require the algorithm to not only be a able to handle all of these components, but also combine them and decide on when to focus on which one and how they should be weighed against each other in the current state of the game.
+
+From the solely technical viewpoint there is also still a lot left to explore. Likely the most interesting point to further discuss is how to model the different action arguments to represent the vast action space that StarCraft II offers as efficiently as possible. While the current models proposed by the DeepMind team work well enough, they still have their share of problems, as they do not concretely deal with the large amount of actions most of which are not available at any given time and also do not adequately describe actions that do not in fact have action parameters, as they are mostly treated like the actions that do. \\ One interesting way of solving this issue might be the use of more hybrid actions similar to the Fight and Retreat actions used in \citep{broodwarRL}. They might reduce the action space considerably by substituting low level actions for traditional programming to some degree, while steering the policy in specific directions by purposefully constricting the possibilities of the agent. 
+
+Also interesting would be to try other reinforcement learning algorithms and different neural network architectures for example with incorporation of LSTM layers.
+
+While the attempt to integrate human experiences into the training process by learning from replays did not succeed as well as hoped in this project, I think this avenue is still very worthwhile to pursue. Especially for the competitive 1 vs 1 mode of the game where there are hundreds of thousands of replays available, that make for great examples to form a basis of what an RL algorithm should be doing. 
+
+Taking everything into consideration I think it is fair to say, that StarCraft II will continue to present interesting challenges for reinforcement learning far into the future and has what it takes to become an important benchmark for measuring the success of reinforcement learning algorithms.
